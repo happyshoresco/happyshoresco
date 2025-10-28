@@ -1,13 +1,13 @@
-// Mobile menu
+
+// Mobile menu toggle
 const toggle = document.querySelector('.nav-toggle');
-const nav = document.querySelector('.nav');
-if (toggle) toggle.addEventListener('click', () => nav.classList.toggle('open'));
+const navLinks = document.querySelector('.nav-links');
 
-// Close menu on link click (mobile)
-document.querySelectorAll('.nav a').forEach(a => {
-  a.addEventListener('click', () => nav.classList.remove('open'));
-});
+if (toggle && navLinks) {
+  toggle.addEventListener('click', () => {
+    navLinks.classList.toggle('open');
+  });
+}
 
-// Year in footer
+// Auto-update footer year
 document.getElementById('year').textContent = new Date().getFullYear();
-
