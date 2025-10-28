@@ -3,264 +3,157 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Happy Shores Co — Lake Weed Removal, Dock Cleaning & Boat Detailing | Madison, WI</title>
-  <meta name="description" content="Eco-friendly lake weed removal, dock cleaning, boat detailing, rock removal, and sand dumps for shore & water. Local to Madison & Dane County. 10% of private proceeds fund free cleanups at public parks and boat launches." />
-
+  <title>Happy Shores Co — Lakefront & Dock Services | Madison & Dane County</title>
+  <meta name="description" content="Eco-friendly lake weed removal, rock removal, dock cleaning, boat detailing, and shoreline sand dumps. Licensed & permitted in Dane County. 10% of private proceeds fund free cleanups at public parks and launches." />
   <link rel="icon" href="logo.png" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="MainBackground.png" />
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Happy Shores Co — Lakefront Care in Dane County" />
-  <meta property="og:description" content="Clear water. Happy shores. Eco-friendly services for your shoreline & boats." />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="MainBackground.png" />
-  <meta property="og:url" content="https://happyshoresco.com" />
-
-  <!-- Local Business JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"LocalBusiness",
-    "name":"Happy Shores Co",
-    "image":"https://happyshoresco.com/logo.png",
-    "url":"https://happyshoresco.com",
-    "email":"mailto:happyshoresco@gmail.com",
-    "telephone":"+16083452345",
-    "address":{
-      "@type":"PostalAddress",
-      "addressLocality":"Madison",
-      "addressRegion":"WI",
-      "addressCountry":"US"
-    },
-    "areaServed":"Dane County, Wisconsin",
-    "description":"Eco-friendly lake weed removal, dock cleaning, boat detailing, rock removal, and sand dumps for shore and water."
-  }
-  </script>
 </head>
-
 <body>
-  <!-- Top Hotline Bar -->
+  <!-- Top utility bar -->
   <div class="topbar">
-    <div class="container">
-      <span>Local & insured • Eco-friendly methods • Permits in place</span>
-      <div class="topbar-actions">
-        <a class="topbar-link" href="mailto:happyshoresco@gmail.com">happyshoresco@gmail.com</a>
-        <a class="btn btn--sm btn--sun" href="tel:+16083452345">Call (608) 345-2345</a>
+    <div class="container topbar__inner">
+      <span class="topbar__left">Local & insured • Eco-friendly methods • Permits in place</span>
+      <div class="topbar__right">
+        <a class="btn btn-email" href="mailto:happyshoresco@gmail.com">happyshoresco@gmail.com</a>
+        <a class="btn btn-call" href="tel:+16083452345">Call (608) 345-2345</a>
       </div>
     </div>
   </div>
 
-  <!-- Navigation -->
-  <header class="header">
+  <!-- Site header / nav -->
+  <header class="site-header">
     <div class="container nav">
-      <a class="brand" href="#">
-        <img src="logo.png" alt="Happy Shores Co logo" />
-        <span>Happy Shores Co</span>
+      <a class="brand" href="#home">
+        <img src="logo.png" alt="Happy Shores Co logo" class="brand__logo" />
+        <span class="brand__name">Happy Shores Co</span>
       </a>
 
-      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <button class="nav-toggle" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
 
-      <nav class="nav-menu" aria-label="Main">
-        <a href="#home" class="active">Home</a>
+      <nav class="nav__links">
+        <a href="#home">Home</a>
         <a href="#services">Services</a>
         <a href="#why">Why Us</a>
         <a href="#process">Process</a>
         <a href="#gallery">Gallery</a>
         <a href="#contact">Contact</a>
-        <a class="btn btn--lake nav-cta" href="#quote">Get a Free Quote</a>
+        <a class="btn btn-cta" href="#contact">Get a Free Quote</a>
       </nav>
     </div>
   </header>
 
-  <!-- Hero -->
+  <!-- HERO -->
   <section id="home" class="hero">
-    <div class="hero-bg" role="img" aria-label="Madison public beach on a sunny day"></div>
-    <div class="hero-overlay"></div>
-    <div class="container hero-inner">
-      <img class="hero-badge" src="logo.png" alt="Happy Shores badge" />
-      <h1>Clear Water. <span class="text-sun">Happy Shores.</span></h1>
-      <p class="lead">
-        Proudly serving Dane County with sustainable, herbicide-free shoreline care.
-        Licensed & permitted for lake weed removal and more.
+    <div class="hero__bg" role="img" aria-label="Madison area lake beach background"></div>
+    <div class="hero__overlay"></div>
+
+    <div class="container hero__content">
+      <img src="logo.png" alt="" class="hero__watermark" />
+      <h1 class="hero__title">
+        <span>Clear Water.</span>
+        <span class="accent">Happy Shores.</span>
+      </h1>
+      <p class="hero__sub">
+        Proudly serving Dane County with sustainable, herbicide-free shoreline care.<br />
+        Licensed & permitted for lake weed & rock removal, dock cleaning, boat detailing, and shoreline sand dumps.
       </p>
-      <div class="cta-row">
-        <a class="btn btn--sun btn--lg" href="#quote">Get a Free Quote</a>
-        <a class="btn btn--ghost btn--lg" href="#services">View Services</a>
-      </div>
-
-      <!-- Review / Trust strip -->
-      <div class="trust-strip">
-        <img src="logo.png" alt="Happy Shores small logo" />
-        <div class="trust-copy">
-          <strong>Local • Insured • Eco-friendly</strong>
-          <span>10% of private proceeds fund free cleanups at public parks & launches.</span>
-        </div>
-        <a class="btn btn--pine btn--sm" href="https://g.page/r/CaYourGoogleReviewLink" target="_blank" rel="noopener">Leave a Google Review</a>
+      <div class="hero__actions">
+        <a class="btn btn-cta" href="#contact">Get a Free Quote</a>
+        <a class="btn btn-outline" href="#services">View Services</a>
       </div>
     </div>
   </section>
 
-  <!-- Services -->
-  <section id="services" class="section">
+  <!-- QUICK “SERVING” CARD (kept, with contrasting Email button) -->
+  <section class="serving">
     <div class="container">
-      <h2 class="section-title">Lakefront & Boat Services</h2>
-      <p class="section-sub">Eco-friendly methods, no herbicides. Fully permitted in Dane County.</p>
-
-      <div class="grid cards">
-        <article class="card">
-          <h3>Lake Weed Removal</h3>
-          <p>Hand-harvested for clarity & safety. We remove and responsibly dispose of lake weeds.</p>
-        </article>
-        <article class="card">
-          <h3>Dock Cleaning</h3>
-          <p>Deep clean your dock so it looks new again—algae, grime, and stains, gone.</p>
-        </article>
-        <article class="card">
-          <h3>Boat Detailing</h3>
-          <p>Exterior wash, polish & interior refresh to keep your boat looking sharp all season.</p>
-        </article>
-        <article class="card">
-          <h3>Rock Removal</h3>
-          <p>Improve swim areas by safely removing nuisance rocks & debris near shore.</p>
-        </article>
-        <article class="card">
-          <h3>Sand Dumps (Shore & Water)</h3>
-          <p>Bring the beach to you—clean, screened sand for shoreline or shallow water.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- Why Us -->
-  <section id="why" class="section section--alt">
-    <div class="container">
-      <h2 class="section-title">Why Choose Happy Shores?</h2>
-      <div class="grid features">
-        <div class="feature">
-          <div class="feature-icon">🌿</div>
-          <h3>Eco-Friendly</h3>
-          <p>No herbicides—ever. Sustainable removal & disposal practices.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🪪</div>
-          <h3>Licensed & Permitted</h3>
-          <p>Fully permitted to perform lake weed removal & shoreline work in Dane County.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🧭</div>
-          <h3>Local to Madison</h3>
-          <p>We serve lakes & shorelines across Madison and Dane County.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">💛</div>
-          <h3>Giveback Program</h3>
-          <p>10% of private proceeds fund free public cleanups (e.g., Goodland Park, Lake Farm Park on Lake Waubesa).</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Process -->
-  <section id="process" class="section">
-    <div class="container">
-      <h2 class="section-title">How It Works</h2>
-      <div class="steps">
-        <div class="step">
-          <span class="step-num">1</span>
-          <h3>Request Quote</h3>
-          <p>Tell us your location, shoreline conditions & goals.</p>
-        </div>
-        <div class="step">
-          <span class="step-num">2</span>
-          <h3>On-Site Plan</h3>
-          <p>We verify permits & outline an eco-friendly plan.</p>
-        </div>
-        <div class="step">
-          <span class="step-num">3</span>
-          <h3>We Get to Work</h3>
-          <p>Professional removal/cleaning with clean-up & disposal.</p>
-        </div>
-        <div class="step">
-          <span class="step-num">4</span>
-          <h3>Enjoy Your Shoreline</h3>
-          <p>Clear water. Happy shores.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Gallery (static grid for now) -->
-  <section id="gallery" class="section section--alt">
-    <div class="container">
-      <h2 class="section-title">Recent Work</h2>
-      <div class="grid gallery">
-        <div class="ph"></div>
-        <div class="ph"></div>
-        <div class="ph"></div>
-        <div class="ph"></div>
-        <div class="ph"></div>
-        <div class="ph"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Service Area / Community -->
-  <section id="quote" class="section">
-    <div class="container">
-      <div class="cta-slab">
-        <div class="cta-slab-copy">
+      <div class="serving__card">
+        <div class="serving__copy">
           <h2>Serving Madison & Dane County</h2>
           <p>
             From Mendota & Monona to Waubesa & Kegonsa — plus rivers, canals, and bays.
             Public giveback sites include <strong>Goodland Park</strong> and <strong>Lake Farm Park</strong> on Lake Waubesa.
           </p>
-          <p class="small">
-            10% of private proceeds fund our public work—keeping local parks and boat launches cleaner for everyone.
+          <p>
+            10% of private proceeds fund our public work — keeping local parks & boat launches cleaner for everyone.
           </p>
         </div>
-        <div class="cta-slab-actions">
-          <a class="btn btn--lake btn--lg" href="tel:+16083452345">Call (608) 345-2345</a>
-          <a class="btn btn--ghost btn--lg" href="mailto:happyshoresco@gmail.com">Email Us</a>
+        <div class="serving__actions">
+          <a class="btn btn-call btn-lg" href="tel:+16083452345">Call (608) 345-2345</a>
+          <a class="btn btn-email btn-lg" href="mailto:happyshoresco@gmail.com">Email Us</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer id="contact" class="footer">
-    <div class="container footer-grid">
-      <div class="foot-brand">
-        <img src="logo.png" alt="Happy Shores Co logo" />
-        <p>Eco-friendly shoreline & boat care — Madison & Dane County.</p>
+  <!-- SERVICES (anchor target only for now) -->
+  <section id="services" class="pad-y">
+    <div class="container">
+      <h2 class="section-title">Lakefront & Boat Services</h2>
+      <ul class="grid cards">
+        <li class="card">
+          <h3>Lake Weed Removal</h3>
+          <p>Hand-pulled & raked to keep swimming areas clear — no herbicides.</p>
+        </li>
+        <li class="card">
+          <h3>Rock Removal</h3>
+          <p>We extract nuisance rocks from shoreline & shallow swim zones.</p>
+        </li>
+        <li class="card">
+          <h3>Dock Cleaning</h3>
+          <p>Algae, grime, and spider clean-offs for a fresh, safe dock.</p>
+        </li>
+        <li class="card">
+          <h3>Boat Detailing</h3>
+          <p>Exterior wash & detail packages to keep your ride looking new.</p>
+        </li>
+        <li class="card">
+          <h3>Shoreline Sand Dumps</h3>
+          <p>Sand placement for beachy feel — on shore and shallow water areas.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CONTACT / QUOTE -->
+  <section id="contact" class="cta pad-y">
+    <div class="container cta__inner">
+      <div class="cta__copy">
+        <img src="logo.png" alt="" class="cta__logo" />
+        <h2>Ready for clearer water and a cleaner shoreline?</h2>
+        <p>Text or call us for a fast, friendly quote — or email if you prefer.</p>
       </div>
-      <div>
-        <h4>Contact</h4>
-        <ul>
-          <li><a href="tel:+16083452345">(608) 345-2345</a></li>
-          <li><a href="mailto:happyshoresco@gmail.com">happyshoresco@gmail.com</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Links</h4>
-        <ul>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#process">Process</a></li>
-          <li><a href="#gallery">Gallery</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4>Community</h4>
-        <p class="small">10% of private proceeds fund free cleanups at public parks & boat launches.</p>
-        <a class="btn btn--pine btn--sm" href="https://g.page/r/CaYourGoogleReviewLink" target="_blank" rel="noopener">Leave a Review</a>
+      <div class="cta__actions">
+        <a class="btn btn-call btn-lg" href="tel:+16083452345">Call (608) 345-2345</a>
+        <a class="btn btn-email btn-lg" href="mailto:happyshoresco@gmail.com">Email happyshoresco@gmail.com</a>
       </div>
     </div>
-    <div class="container footer-bottom">
-      <span>© <span id="year"></span> Happy Shores Co. All rights reserved.</span>
-      <span>Madison, WI • Dane County</span>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <img src="logo.png" alt="Happy Shores Co logo" />
+        <strong>Happy Shores Co</strong>
+      </div>
+      <nav class="footer__nav">
+        <a href="#home">Home</a>
+        <a href="#services">Services</a>
+        <a href="#why">Why Us</a>
+        <a href="#process">Process</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="footer__contact">
+        <a href="tel:+16083452345">(608) 345-2345</a>
+        <a href="mailto:happyshoresco@gmail.com">happyshoresco@gmail.com</a>
+      </div>
+    </div>
+    <div class="container footer__bottom">
+      <small>© <span id="year"></span> Happy Shores Co. All rights reserved.</small>
     </div>
   </footer>
 

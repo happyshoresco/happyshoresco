@@ -1,17 +1,12 @@
 // Mobile menu
 const toggle = document.querySelector('.nav-toggle');
-const menu = document.querySelector('.nav-menu');
-
+const nav = document.querySelector('.nav');
 if (toggle) {
-  toggle.addEventListener('click', () => {
-    const open = menu.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
+  toggle.addEventListener('click', () => nav.classList.toggle('open'));
 }
-
-// Close on link click (mobile)
-document.querySelectorAll('.nav-menu a').forEach(a=>{
-  a.addEventListener('click', ()=> menu.classList.remove('open'));
+// Close menu on link click (mobile)
+document.querySelectorAll('.nav__links a').forEach(a=>{
+  a.addEventListener('click', ()=> nav.classList.remove('open'));
 });
 
 // Year in footer
