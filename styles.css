@@ -262,3 +262,30 @@ img{max-width:100%;display:block}
   color: #0a2a2a;
   font-size: 0.95rem;
 }
+/* === FAQ Scroll Reveal === */
+.faq-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .5s ease, transform .5s ease;
+  will-change: opacity, transform;
+}
+
+/* when revealed */
+.faq-item.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* stagger helper (JS sets --delay) */
+.faq-item.in-view {
+  transition-delay: var(--delay, 0ms);
+}
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .faq-item {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
