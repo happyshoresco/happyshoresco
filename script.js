@@ -1,13 +1,18 @@
-
-// Mobile menu toggle
+// Mobile menu
 const toggle = document.querySelector('.nav-toggle');
-const navLinks = document.querySelector('.nav-links');
+const menu = document.querySelector('.nav-menu');
 
-if (toggle && navLinks) {
+if (toggle) {
   toggle.addEventListener('click', () => {
-    navLinks.classList.toggle('open');
+    const open = menu.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 }
 
-// Auto-update footer year
+// Close on link click (mobile)
+document.querySelectorAll('.nav-menu a').forEach(a=>{
+  a.addEventListener('click', ()=> menu.classList.remove('open'));
+});
+
+// Year in footer
 document.getElementById('year').textContent = new Date().getFullYear();
