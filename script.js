@@ -1,4 +1,4 @@
-// Mobile menu
+// Mobile menu3
 const toggle = document.querySelector('.nav-toggle');
 const nav = document.querySelector('.nav');
 if (toggle) {
