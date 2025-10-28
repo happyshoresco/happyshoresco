@@ -140,3 +140,52 @@ img{max-width:100%;display:block}
   .nav-toggle{display:flex}
 }
 
+/* === GOOGLE REVIEWS SECTION === */
+.google-reviews {
+  margin-top: 1.8rem;
+  background: rgba(255,255,255,0.9);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  padding: 1.8rem;
+  text-align: center;
+  color: #0b2c2c;
+}
+
+.reviews-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: var(--teal);
+}
+
+.reviews-container {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1.4rem;
+}
+
+.review {
+  background: #f8fbfb;
+  border-radius: 10px;
+  padding: 1rem;
+  border: 1px solid #e5f0ef;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+}
+
+.review p {
+  font-size: 0.95rem;
+  color: #123;
+  margin: 0.5rem 0;
+}
+
+.stars {
+  color: #f5b900;
+  font-size: 1.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.reviewer {
+  font-size: 0.85rem;
+  color: #557;
+}
