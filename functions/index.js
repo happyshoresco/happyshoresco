@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
 const sgMail    = require('@sendgrid/mail');
 const PDFDoc    = require('pdfkit');
+const https     = require('https');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -14,8 +15,23 @@ const COMPANY_WEBSITE  = 'happyshoresco.com';
 
 sgMail.setApiKey(SENDGRID_API_KEY);
 
+// ── Fetch logo as a buffer from the live site ─────────────────────────────────
+function fetchLogoBuffer() {
+  return new Promise((resolve, reject) => {
+    https.get('https://happyshoresco.com/logo.png', res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end',  () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
 // ── Generate PDF buffer from invoice data ──────────────────────────────────────
-function generateInvoicePDF(inv) {
+async function generateInvoicePDF(inv) {
+  let logoBuffer = null;
+  try { logoBuffer = await fetchLogoBuffer(); } catch (_) {}
+
   return new Promise((resolve, reject) => {
     const doc    = new PDFDoc({ margin: 50, size: 'LETTER' });
     const chunks = [];
@@ -30,34 +46,39 @@ function generateInvoicePDF(inv) {
     const gold  = '#e8a500';
 
     // ── Header bar ──
-    doc.rect(0, 0, 612, 90).fill(teal);
+    doc.rect(0, 0, 612, 110).fill(teal);
+
+    // Logo — right side of header as a circular badge
+    if (logoBuffer) {
+      doc.image(logoBuffer, 492, 5, { width: 100, height: 100 });
+    }
 
     doc.fontSize(22).font('Helvetica-Bold').fillColor('#ffffff')
-      .text('Happy Shores Co', 50, 28);
+      .text('Happy Shores Co', 50, 30);
 
     doc.fontSize(9).font('Helvetica').fillColor('rgba(255,255,255,0.75)')
-      .text(`${COMPANY_PHONE}  ·  ${COMPANY_WEBSITE}  ·  ${FROM_EMAIL}`, 50, 56);
+      .text(`${COMPANY_PHONE}  ·  ${COMPANY_WEBSITE}  ·  ${FROM_EMAIL}`, 50, 58);
 
     doc.fontSize(20).font('Helvetica-Bold').fillColor(gold)
-      .text('INVOICE', 0, 32, { align: 'right', width: 562 });
+      .text('INVOICE', 0, 78, { align: 'right', width: 480 });
 
     // ── Invoice meta ──
     doc.fillColor(ink);
     const invNum = String(inv.invoiceNumber || '').padStart(4, '0');
-    doc.fontSize(10).font('Helvetica-Bold').text(`Invoice #${invNum}`, 50, 110);
+    doc.fontSize(10).font('Helvetica-Bold').text(`Invoice #${invNum}`, 50, 130);
     doc.fontSize(9).font('Helvetica').fillColor(muted)
-      .text(`Date: ${fmtDate(inv.date)}`, 50, 126)
-      .text(`Due:  ${fmtDate(inv.dueDate)}`, 50, 140);
+      .text(`Date: ${fmtDate(inv.date)}`, 50, 146)
+      .text(`Due:  ${fmtDate(inv.dueDate)}`, 50, 160);
 
     // ── Bill To ──
-    doc.fillColor(ink).fontSize(9).font('Helvetica-Bold').text('BILL TO', 300, 110);
+    doc.fillColor(ink).fontSize(9).font('Helvetica-Bold').text('BILL TO', 300, 130);
     doc.fontSize(10).font('Helvetica').fillColor(ink)
-      .text(inv.customerName || '', 300, 126);
-    if (inv.customerEmail) doc.text(inv.customerEmail, 300, 140);
-    if (inv.customerPhone) doc.text(inv.customerPhone, 300, 154);
+      .text(inv.customerName || '', 300, 146);
+    if (inv.customerEmail) doc.text(inv.customerEmail, 300, 160);
+    if (inv.customerPhone) doc.text(inv.customerPhone, 300, 174);
 
     // ── Line items table ──
-    let y = 195;
+    let y = 215;
     doc.rect(50, y, 512, 22).fill('#eef4f3');
     doc.fontSize(8).font('Helvetica-Bold').fillColor(muted)
       .text('DESCRIPTION', 58, y + 7)
@@ -154,9 +175,12 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
 
   const htmlBody = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
-    <div style="background:#0d7370;padding:24px 32px;">
+    <div style="background:#f5f0e8;padding:20px;text-align:center;">
+      <img src="https://happyshoresco.com/logo.png" width="110" alt="Happy Shores Co" style="display:inline-block;" />
+    </div>
+    <div style="background:#0d7370;padding:20px 32px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
-      <p style="color:rgba(255,255,255,0.7);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · ${COMPANY_WEBSITE}</p>
+      <p style="color:rgba(255,255,255,0.85);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · <a href="https://${COMPANY_WEBSITE}" style="color:#e8c97c;text-decoration:none;">${COMPANY_WEBSITE}</a></p>
     </div>
     <div style="padding:32px;background:#fff;line-height:1.7;">
       <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
