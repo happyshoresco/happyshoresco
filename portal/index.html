@@ -1375,13 +1375,14 @@ function renderInvoices() {
     if (sort === 'amount-asc')  return total(a) - total(b);
     if (sort === 'due')         return (a.dueDate||'9999') < (b.dueDate||'9999') ? -1 : 1;
     return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0); // newest
+  });
   const tbody = document.getElementById('invoiceTbody');
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="es-icon">🧾</div><p>No invoices${invFilter !== 'all' ? ` with status "${invFilter}"` : ''} yet.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map((inv, idx) => {
-    const total = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
+    const invTotal = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
     const due = inv.dueDate ? dueDays(inv.dueDate) : null;
     const dueLabel = due === null ? '—' : due < 0 ? `<span style="color:var(--error)">${Math.abs(due)}d overdue</span>` : due === 0 ? `<span style="color:var(--error)">Due today</span>` : `${due}d`;
     return `
@@ -1390,7 +1391,7 @@ function renderInvoices() {
         <td>${esc(inv.customerName || '—')}</td>
         <td>${fmtDate(inv.date)}</td>
         <td>${dueLabel}</td>
-        <td style="font-weight:700">$${total.toFixed(2)}</td>
+        <td style="font-weight:700">$${invTotal.toFixed(2)}</td>
         <td>${statusBadge(inv.status)}</td>
         <td>
           <div class="td-actions">
