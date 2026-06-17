@@ -150,18 +150,32 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
 
   const total = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
 
+  const GOOGLE_REVIEW_URL = 'YOUR_GOOGLE_REVIEW_LINK_HERE';
+
   const htmlBody = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
     <div style="background:#0d7370;padding:24px 32px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
       <p style="color:rgba(255,255,255,0.7);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · ${COMPANY_WEBSITE}</p>
     </div>
-    <div style="padding:32px;background:#fff;">
+    <div style="padding:32px;background:#fff;line-height:1.7;">
       <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
-      <p style="margin:0 0 16px;">Please find your invoice #${invNum} attached to this email${inv.dueDate ? `, due on ${fmtDate(inv.dueDate)}` : ''}. The total amount due is <strong>$${total.toFixed(2)}</strong>.</p>
-      ${inv.notes ? `<p style="margin:0 0 16px;">${inv.notes}</p>` : ''}
-      <p style="margin:0 0 8px;">If you have any questions, please call us at ${COMPANY_PHONE} or reply to this email.</p>
-      <p style="margin:0;">Thank you for choosing Happy Shores Co!</p>
+
+      <p style="margin:0 0 16px;">Thank you so much for trusting Happy Shores Co with your lakefront — it truly means the world to us. Please find your invoice #${invNum} attached${inv.dueDate ? `, due on ${fmtDate(inv.dueDate)}` : ''}. The total amount due is <strong>$${total.toFixed(2)}</strong>.</p>
+
+      <p style="margin:0 0 16px;">Our goal is always to deliver a five-star experience, and your satisfaction is our top priority. If for any reason the work didn't meet your expectations, please reach out and we will come back out and make it right — no questions asked.</p>
+
+      <p style="margin:0 0 16px;">If you did have a great experience, we'd be incredibly grateful if you took a moment to leave us a Google review. As a small local business, reviews make a huge difference for us and help other lake owners find the help they need.</p>
+
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${GOOGLE_REVIEW_URL}" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">⭐ Leave Us a Google Review</a>
+      </div>
+
+      <p style="margin:0 0 16px;">Also, if you'd like to keep your shoreline looking its best all season without the hassle, ask us about our <strong>subscription maintenance plans</strong> — we'll handle everything on a regular schedule so you can spend more time enjoying the water.</p>
+
+      <p style="margin:0 0 8px;">Questions? Call us anytime at ${COMPANY_PHONE} or simply reply to this email.</p>
+      <p style="margin:0;">Thanks again — we look forward to serving you!</p>
+      <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
     </div>
     <div style="background:#081e1e;padding:14px 32px;text-align:center;">
       <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
