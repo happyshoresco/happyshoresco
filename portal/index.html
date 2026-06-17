@@ -371,6 +371,29 @@
     .stat-card--green .stat-card__value { color: #065f46; }
     .stat-card--blue .stat-card__value { color: #1e40af; }
 
+    .revenue-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.75rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      margin-bottom: 2rem;
+    }
+    .revenue-card__header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
+    .revenue-card__label { font-size: .8125rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
+    .revenue-card__value { font-size: 2.5rem; font-weight: 800; color: #065f46; line-height: 1; }
+    .revenue-card__breakdown { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .rev-item { display: flex; align-items: center; gap: .5rem; font-size: .875rem; }
+    .rev-item__label { color: var(--text-muted); }
+    .rev-item__val { font-weight: 700; color: var(--ink); }
+    .rev-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .rev-dot--green { background: #10b981; }
+    .rev-dot--gold  { background: var(--gold); }
+    .rev-dot--muted { background: var(--gray-200); border: 1.5px solid var(--text-muted); }
+    .revenue-bar-track { height: 10px; background: var(--gray-100); border-radius: 99px; overflow: hidden; margin-bottom: .5rem; }
+    .revenue-bar-fill  { height: 100%; background: linear-gradient(90deg, #059669, #10b981); border-radius: 99px; transition: width .6s ease; }
+    .revenue-bar-labels { display: flex; justify-content: space-between; font-size: .8rem; color: var(--text-muted); }
+
     .welcome-card {
       background: linear-gradient(135deg, var(--teal-bg) 0%, var(--teal-dark) 100%);
       border-radius: var(--radius-md);
@@ -611,6 +634,40 @@
           <div class="stat-card__label">Upcoming Jobs</div>
           <div class="stat-card__value" id="statJobs">—</div>
           <div class="stat-card__sub">next 7 days</div>
+        </div>
+      </div>
+
+      <!-- Revenue Summary -->
+      <div class="revenue-card">
+        <div class="revenue-card__header">
+          <div>
+            <div class="revenue-card__label">Total Revenue Collected</div>
+            <div class="revenue-card__value" id="statRevenue">$0</div>
+          </div>
+          <div class="revenue-card__breakdown">
+            <div class="rev-item">
+              <span class="rev-dot rev-dot--green"></span>
+              <span class="rev-item__label">Paid</span>
+              <span class="rev-item__val" id="statRevPaid">$0</span>
+            </div>
+            <div class="rev-item">
+              <span class="rev-dot rev-dot--gold"></span>
+              <span class="rev-item__label">Outstanding</span>
+              <span class="rev-item__val" id="statRevOpen">$0</span>
+            </div>
+            <div class="rev-item">
+              <span class="rev-dot rev-dot--muted"></span>
+              <span class="rev-item__label">Invoices</span>
+              <span class="rev-item__val" id="statRevCount">0</span>
+            </div>
+          </div>
+        </div>
+        <div class="revenue-bar-track">
+          <div class="revenue-bar-fill" id="statRevBar" style="width:0%"></div>
+        </div>
+        <div class="revenue-bar-labels">
+          <span id="statRevBarPct">0% collected</span>
+          <span id="statRevBarTotal"></span>
         </div>
       </div>
     </div>
@@ -1972,6 +2029,24 @@ function refreshDashboardStats() {
     j.status !== 'cancelled' && j.status !== 'completed'
   ).length;
   document.getElementById('statJobs').textContent = upcomingJobs;
+
+  // Revenue summary
+  const invTotal = inv => (inv.items||[]).reduce((s,it) => s + (+it.qty * +it.price), 0);
+  const paid = allInvoices.filter(i => i.status === 'paid');
+  const unpaid = allInvoices.filter(i => i.status !== 'paid');
+  const revPaid  = paid.reduce((s, i) => s + invTotal(i), 0);
+  const revOpen  = unpaid.reduce((s, i) => s + invTotal(i), 0);
+  const revTotal = revPaid + revOpen;
+  const pct = revTotal > 0 ? Math.round((revPaid / revTotal) * 100) : 0;
+
+  const fmt = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('statRevenue').textContent   = fmt(revPaid);
+  document.getElementById('statRevPaid').textContent   = fmt(revPaid);
+  document.getElementById('statRevOpen').textContent   = fmt(revOpen);
+  document.getElementById('statRevCount').textContent  = allInvoices.length;
+  document.getElementById('statRevBar').style.width    = pct + '%';
+  document.getElementById('statRevBarPct').textContent = pct + '% collected';
+  document.getElementById('statRevBarTotal').textContent = revTotal > 0 ? `${fmt(revPaid)} of ${fmt(revTotal)}` : '';
 }
 </script>
 </body>
