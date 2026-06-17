@@ -1,0 +1,1795 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Happy Shores — Dashboard</title>
+  <link rel="icon" href="../logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0c2e2e;
+      --teal: #0d7370;
+      --teal-light: #148f8b;
+      --teal-dark: #0a5553;
+      --teal-bg: #0f3c3b;
+      --gold: #e8a500;
+      --gold-bright: #f2b705;
+      --white: #ffffff;
+      --gray-50: #f7fafa;
+      --gray-100: #eef4f3;
+      --gray-200: #d8e8e6;
+      --text-muted: #4a7070;
+      --error: #c0392b;
+      --success: #1a7a4a;
+      --sidebar-w: 248px;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 2px 6px rgba(12,46,46,.06);
+      --shadow-md: 0 8px 24px rgba(12,46,46,.09);
+      --shadow-lg: 0 20px 50px rgba(12,46,46,.13);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--gray-50);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--teal-bg);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+
+    .sidebar__brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1.4rem 1.25rem 1.2rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .sidebar__brand img {
+      width: 36px; height: 36px;
+      object-fit: contain; flex-shrink: 0;
+    }
+
+    .sidebar__brand-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: .9rem; font-weight: 700;
+      color: var(--white); line-height: 1.2;
+    }
+
+    .sidebar__brand-text span {
+      display: block;
+      font-family: 'Inter', sans-serif;
+      font-size: .7rem; font-weight: 500;
+      color: rgba(255,255,255,.45);
+      letter-spacing: .04em; text-transform: uppercase;
+      margin-top: .1rem;
+    }
+
+    .sidebar__nav { flex: 1; padding: 1rem 0; overflow-y: auto; }
+
+    .nav-section {
+      padding: .5rem 1.25rem .25rem;
+      font-size: .6875rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+    }
+
+    .nav-link {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .6rem 1.25rem;
+      color: rgba(255,255,255,.65); text-decoration: none;
+      font-size: .875rem; font-weight: 500;
+      transition: background .15s, color .15s;
+      cursor: pointer; border: none; background: none;
+      width: 100%; text-align: left;
+    }
+
+    .nav-link:hover { background: rgba(255,255,255,.07); color: var(--white); }
+    .nav-link.active { background: rgba(232,165,0,.15); color: var(--gold); font-weight: 600; }
+    .nav-link .icon { font-size: 1.05rem; width: 20px; text-align: center; flex-shrink: 0; }
+
+    .sidebar__footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+
+    .user-badge { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
+
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--teal);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8125rem; font-weight: 700;
+      color: var(--white); flex-shrink: 0;
+    }
+
+    .user-info { min-width: 0; }
+    .user-name { font-size: .8125rem; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email { font-size: .7rem; color: rgba(255,255,255,.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .btn-signout {
+      display: block; width: 100%; padding: .5rem;
+      background: rgba(255,255,255,.06); color: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.1); border-radius: 6px;
+      font-family: inherit; font-size: .8125rem; font-weight: 500;
+      cursor: pointer; transition: background .15s, color .15s;
+    }
+    .btn-signout:hover { background: rgba(255,255,255,.12); color: var(--white); }
+
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 2rem; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .page-title { font-size: 1.0625rem; font-weight: 700; color: var(--ink); }
+
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+
+    .content { padding: 2rem; flex: 1; }
+
+    /* ── PANELS ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── SHARED COMPONENTS ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-200);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 1.4rem;
+      border-bottom: 1px solid var(--gray-100);
+      flex-wrap: wrap; gap: .75rem;
+    }
+
+    .card-header h3 { font-size: 1rem; font-weight: 700; color: var(--ink); }
+
+    .card-body { padding: 1.4rem; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+      font-family: inherit; font-size: .875rem; font-weight: 600;
+      border-radius: var(--radius-sm); border: none; cursor: pointer;
+      transition: all .15s; white-space: nowrap; text-decoration: none;
+    }
+
+    .btn-primary { background: var(--teal); color: #fff; padding: .55rem 1.1rem; }
+    .btn-primary:hover { background: var(--teal-light); }
+
+    .btn-gold { background: var(--gold-bright); color: #0c2000; padding: .55rem 1.1rem; }
+    .btn-gold:hover { background: var(--gold); }
+
+    .btn-ghost { background: transparent; color: var(--text-muted); padding: .5rem .75rem; border: 1px solid var(--gray-200); }
+    .btn-ghost:hover { background: var(--gray-50); color: var(--ink); }
+
+    .btn-danger { background: #fee2e2; color: #991b1b; padding: .45rem .8rem; font-size: .8125rem; }
+    .btn-danger:hover { background: #fecaca; }
+
+    .btn-sm { padding: .35rem .7rem; font-size: .8rem; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: .2rem .6rem; border-radius: 999px;
+      font-size: .75rem; font-weight: 700; letter-spacing: .02em;
+    }
+
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-gray { background: var(--gray-100); color: var(--text-muted); }
+    .badge-teal { background: #ccfbf1; color: #0f766e; }
+
+    .search-bar {
+      display: flex; align-items: center; gap: .5rem;
+    }
+
+    .search-input {
+      padding: .5rem .85rem;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: .875rem; font-family: inherit;
+      color: var(--ink); background: var(--gray-50);
+      outline: none; transition: border-color .15s;
+      min-width: 220px;
+    }
+
+    .search-input:focus { border-color: var(--teal); background: #fff; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+
+    th {
+      text-align: left; padding: .75rem 1rem;
+      font-size: .75rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+
+    td {
+      padding: .8rem 1rem;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--ink); vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gray-50); }
+
+    .td-actions { display: flex; gap: .4rem; }
+
+    .empty-state {
+      text-align: center; padding: 3.5rem 2rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .es-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .empty-state p { font-size: .9375rem; }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(6,24,24,.55);
+      backdrop-filter: blur(3px);
+      z-index: 500;
+      align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 540px;
+      max-height: 90vh; overflow-y: auto;
+      animation: slideUp .2s ease;
+    }
+
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.25rem; color: var(--text-muted);
+      padding: .2rem .4rem; border-radius: 4px;
+      transition: color .15s, background .15s;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--ink); background: var(--gray-100); }
+
+    .modal-body { padding: 1.5rem; }
+
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: .75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; gap: 1rem; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+
+    .form-group label {
+      font-size: .8125rem; font-weight: 600; color: var(--ink); letter-spacing: .01em;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: .65rem .9rem;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: .9rem; font-family: inherit;
+      color: var(--ink); background: var(--gray-50);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--teal);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(13,115,112,.1);
+    }
+
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    .form-hint { font-size: .78rem; color: var(--text-muted); }
+
+    /* ── DASHBOARD ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem; margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 1.4rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+    }
+
+    .stat-card__label {
+      font-size: .8125rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem;
+    }
+
+    .stat-card__value { font-size: 2rem; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: .25rem; }
+    .stat-card__sub { font-size: .8125rem; color: var(--text-muted); }
+    .stat-card--gold .stat-card__value { color: var(--gold); }
+    .stat-card--teal .stat-card__value { color: var(--teal); }
+    .stat-card--green .stat-card__value { color: #065f46; }
+    .stat-card--blue .stat-card__value { color: #1e40af; }
+
+    .welcome-card {
+      background: linear-gradient(135deg, var(--teal-bg) 0%, var(--teal-dark) 100%);
+      border-radius: var(--radius-md);
+      padding: 1.75rem 2rem;
+      color: var(--white);
+      margin-bottom: 2rem;
+    }
+
+    .welcome-card h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.4rem; margin-bottom: .35rem; }
+    .welcome-card p { font-size: .9rem; opacity: .7; }
+
+    /* ── INVOICING ── */
+    .invoice-items { display: flex; flex-direction: column; gap: .5rem; }
+
+    .invoice-item-row {
+      display: grid;
+      grid-template-columns: 1fr 80px 90px 32px;
+      gap: .5rem; align-items: center;
+    }
+
+    .invoice-total-row {
+      display: flex; justify-content: flex-end;
+      font-size: 1rem; font-weight: 700;
+      color: var(--ink); padding-top: .75rem;
+      border-top: 1px solid var(--gray-200);
+      gap: 1rem;
+    }
+
+    .invoice-total-row span:first-child { color: var(--text-muted); font-weight: 500; }
+
+    .filter-tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+    .filter-tab {
+      padding: .35rem .9rem;
+      border-radius: 999px;
+      font-size: .8rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--gray-200);
+      background: var(--white); color: var(--text-muted);
+      transition: all .15s;
+    }
+
+    .filter-tab.active {
+      background: var(--teal); color: #fff; border-color: var(--teal);
+    }
+
+    /* ── PERMITS ── */
+    .permit-status-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+
+    .permit-stat {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      text-align: center;
+    }
+
+    .permit-stat__num { font-size: 1.75rem; font-weight: 800; line-height: 1; margin-bottom: .2rem; }
+    .permit-stat__label { font-size: .78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+    /* ── JOBS ── */
+    .job-list { display: flex; flex-direction: column; gap: .75rem; }
+
+    .job-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.4rem;
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 1rem; align-items: center;
+    }
+
+    .job-date {
+      text-align: center;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: .5rem .3rem;
+    }
+
+    .job-date__day { font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--teal); }
+    .job-date__mon { font-size: .65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: .06em; }
+
+    .job-info h4 { font-size: .9375rem; font-weight: 700; margin-bottom: .2rem; }
+    .job-info p { font-size: .8125rem; color: var(--text-muted); }
+
+    /* ── NOTES ── */
+    .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+    .note-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex; flex-direction: column; gap: .6rem;
+    }
+
+    .note-card h4 { font-size: .9375rem; font-weight: 700; color: var(--ink); }
+    .note-card p { font-size: .875rem; color: var(--text-muted); line-height: 1.6; flex: 1; white-space: pre-wrap; }
+
+    .note-meta { font-size: .75rem; color: rgba(74,112,112,.6); display: flex; justify-content: space-between; align-items: center; }
+
+    /* ── AUTH GATE ── */
+    #authGate {
+      position: fixed; inset: 0;
+      background: var(--teal-bg);
+      z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .gate-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--ink); color: #fff;
+      padding: .75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: .875rem; font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999; opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+    }
+
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--success); }
+    #toast.error { background: var(--error); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      .sidebar { transform: translateX(-100%); }
+      .main { margin-left: 0; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="authGate"><div class="gate-spinner"></div></div>
+<div id="toast"></div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar__brand">
+    <img src="../logo.png" alt="Happy Shores Co" />
+    <div class="sidebar__brand-text">
+      Happy Shores Co
+      <span>Employee Portal</span>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav">
+    <div class="nav-section">Main</div>
+    <button class="nav-link active" data-panel="home">
+      <span class="icon">🏠</span> Dashboard
+    </button>
+
+    <div class="nav-section">Business</div>
+    <button class="nav-link" data-panel="customers">
+      <span class="icon">👥</span> Customers
+    </button>
+    <button class="nav-link" data-panel="invoices">
+      <span class="icon">🧾</span> Invoicing
+    </button>
+    <button class="nav-link" data-panel="permits">
+      <span class="icon">📋</span> Dane Co. Permits
+    </button>
+    <button class="nav-link" data-panel="jobs">
+      <span class="icon">📅</span> Job Schedule
+    </button>
+
+    <div class="nav-section">Tools</div>
+    <button class="nav-link" data-panel="notes">
+      <span class="icon">📝</span> Team Notes
+    </button>
+  </nav>
+
+  <div class="sidebar__footer">
+    <div class="user-badge">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">Loading…</div>
+        <div class="user-email" id="userEmail">—</div>
+      </div>
+    </div>
+    <button class="btn-signout" id="signOutBtn">Sign out</button>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <a href="../index.html" style="font-size:.8125rem;color:var(--text-muted);text-decoration:none;">← Main site</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ HOME ════ -->
+    <div class="panel active" id="panel-home">
+      <div class="welcome-card">
+        <h2 id="welcomeMsg">Welcome back!</h2>
+        <p id="welcomeDate"></p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-card__label">Total Customers</div>
+          <div class="stat-card__value" id="statCustomers">—</div>
+          <div class="stat-card__sub">in the system</div>
+        </div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-card__label">Open Invoices</div>
+          <div class="stat-card__value" id="statInvoices">—</div>
+          <div class="stat-card__sub">awaiting payment</div>
+        </div>
+        <div class="stat-card stat-card--green">
+          <div class="stat-card__label">Active Permits</div>
+          <div class="stat-card__value" id="statPermits">—</div>
+          <div class="stat-card__sub">approved this season</div>
+        </div>
+        <div class="stat-card stat-card--blue">
+          <div class="stat-card__label">Upcoming Jobs</div>
+          <div class="stat-card__value" id="statJobs">—</div>
+          <div class="stat-card__sub">next 7 days</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CUSTOMERS ════ -->
+    <div class="panel" id="panel-customers">
+      <div class="card">
+        <div class="card-header">
+          <h3>Customer List</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <input class="search-input" id="customerSearch" placeholder="Search name, lake, email…" style="min-width:180px;" />
+            <button class="btn btn-primary" id="addCustomerBtn">+ Add Customer</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="customerTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Lake / Location</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="customerTbody">
+              <tr><td colspan="6"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading customers…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INVOICES ════ -->
+    <div class="panel" id="panel-invoices">
+      <div class="card">
+        <div class="card-header">
+          <h3>Invoicing</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-inv-filter="all">All</button>
+              <button class="filter-tab" data-inv-filter="draft">Draft</button>
+              <button class="filter-tab" data-inv-filter="sent">Sent</button>
+              <button class="filter-tab" data-inv-filter="paid">Paid</button>
+            </div>
+            <button class="btn btn-primary" id="addInvoiceBtn">+ New Invoice</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="invoiceTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Due</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="invoiceTbody">
+              <tr><td colspan="7"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading invoices…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ PERMITS ════ -->
+    <div class="panel" id="panel-permits">
+      <div class="permit-status-bar" id="permitStats">
+        <div class="permit-stat"><div class="permit-stat__num" style="color:var(--teal)" id="pStatTotal">—</div><div class="permit-stat__label">Total</div></div>
+        <div class="permit-stat"><div class="permit-stat__num" style="color:#92400e" id="pStatPending">—</div><div class="permit-stat__label">Pending</div></div>
+        <div class="permit-stat"><div class="permit-stat__num" style="color:#065f46" id="pStatApproved">—</div><div class="permit-stat__label">Approved</div></div>
+        <div class="permit-stat"><div class="permit-stat__num" style="color:#991b1b" id="pStatDenied">—</div><div class="permit-stat__label">Denied</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Dane County Lake Weed Removal Permits</h3>
+          <button class="btn btn-primary" id="addPermitBtn">+ New Permit Application</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer / Property</th>
+                <th>Lake</th>
+                <th>Address</th>
+                <th>Applied</th>
+                <th>Permit #</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="permitTbody">
+              <tr><td colspan="8"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading permits…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ JOBS ════ -->
+    <div class="panel" id="panel-jobs">
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-header">
+          <h3>Job Schedule</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-job-filter="upcoming">Upcoming</button>
+              <button class="filter-tab" data-job-filter="all">All</button>
+              <button class="filter-tab" data-job-filter="completed">Completed</button>
+            </div>
+            <button class="btn btn-primary" id="addJobBtn">+ Add Job</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding-top:.5rem;">
+          <div class="job-list" id="jobList">
+            <div class="empty-state"><div class="es-icon">⏳</div><p>Loading jobs…</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ NOTES ════ -->
+    <div class="panel" id="panel-notes">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h3 style="font-size:1.1rem;font-weight:700;">Team Notes</h3>
+        <button class="btn btn-primary" id="addNoteBtn">+ New Note</button>
+      </div>
+      <div class="notes-grid" id="notesGrid">
+        <div class="empty-state"><div class="es-icon">⏳</div><p>Loading notes…</p></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════
+     MODALS
+═══════════════════════════════════════ -->
+
+<!-- Customer Modal -->
+<div class="modal-backdrop" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="customerModalTitle">Add Customer</h2>
+      <button class="modal-close" data-close="customerModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="custId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Full Name *</label>
+          <input type="text" id="custName" placeholder="John & Jane Smith" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="custPhone" placeholder="(608) 555-0100" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="custEmail" placeholder="customer@email.com" />
+        </div>
+        <div class="form-group">
+          <label>Lake</label>
+          <input type="text" id="custLake" placeholder="Lake Mendota" />
+        </div>
+        <div class="form-group">
+          <label>Property Address</label>
+          <input type="text" id="custAddress" placeholder="123 Lakeshore Dr, Madison" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="custNotes" placeholder="Access codes, preferences, special instructions…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="customerModal">Cancel</button>
+      <button class="btn btn-primary" id="saveCustomerBtn">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-backdrop" id="invoiceModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h2 id="invoiceModalTitle">New Invoice</h2>
+      <button class="modal-close" data-close="invoiceModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="invId" />
+      <div class="form-grid form-grid-2" style="margin-bottom:1rem;">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Customer *</label>
+          <select id="invCustomer">
+            <option value="">— Select customer —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Invoice Date</label>
+          <input type="date" id="invDate" />
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="date" id="invDue" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="invStatus">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="font-size:.8125rem;font-weight:700;color:var(--ink);display:block;margin-bottom:.5rem;">Line Items</label>
+      <div class="invoice-items" id="invItemsContainer"></div>
+      <button class="btn btn-ghost btn-sm" id="addLineItem" style="margin-top:.6rem;">+ Add Line Item</button>
+
+      <div class="invoice-total-row" id="invTotalRow">
+        <span>Total</span>
+        <span id="invTotalDisplay">$0.00</span>
+      </div>
+
+      <div class="form-group" style="margin-top:1rem;">
+        <label>Notes / Message to Customer</label>
+        <textarea id="invNotes" placeholder="Thank you for your business!"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="invoiceModal">Cancel</button>
+      <button class="btn btn-primary" id="saveInvoiceBtn">Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Permit Modal -->
+<div class="modal-backdrop" id="permitModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="permitModalTitle">New Permit Application</h2>
+      <button class="modal-close" data-close="permitModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="permId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label>Customer / Owner Name *</label>
+          <input type="text" id="permCustomer" placeholder="Property owner name" />
+        </div>
+        <div class="form-group">
+          <label>Lake *</label>
+          <input type="text" id="permLake" placeholder="Lake Mendota" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Property Address</label>
+          <input type="text" id="permAddress" placeholder="123 Lakeshore Dr, Madison, WI" />
+        </div>
+        <div class="form-group">
+          <label>Date Applied</label>
+          <input type="date" id="permApplied" />
+        </div>
+        <div class="form-group">
+          <label>Permit Number</label>
+          <input type="text" id="permNumber" placeholder="DC-2025-####" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="permStatus">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="denied">Denied</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Expiration Date</label>
+          <input type="date" id="permExpires" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="permNotes" placeholder="Scope of work, conditions, contacts…"></textarea>
+        </div>
+      </div>
+      <p class="form-hint" style="margin-top:.75rem;">
+        Dane County permits are issued by the <strong>Dane County Land & Water Resources Dept</strong>.
+        Applications: <strong>(608) 224-3730</strong> or dclwr@countyofdane.com
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="permitModal">Cancel</button>
+      <button class="btn btn-primary" id="savePermitBtn">Save Permit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job Modal -->
+<div class="modal-backdrop" id="jobModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="jobModalTitle">Add Job</h2>
+      <button class="modal-close" data-close="jobModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="jobId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Customer *</label>
+          <select id="jobCustomer">
+            <option value="">— Select customer —</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Service Type *</label>
+          <select id="jobService">
+            <option value="Lake Weed Removal">Lake Weed Removal</option>
+            <option value="Aquatic Plant Management">Aquatic Plant Management</option>
+            <option value="Beach Cleaning">Beach Cleaning</option>
+            <option value="Shoreline Treatment">Shoreline Treatment</option>
+            <option value="Consultation">Consultation</option>
+            <option value="Follow-up Visit">Follow-up Visit</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Scheduled Date *</label>
+          <input type="date" id="jobDate" />
+        </div>
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="time" id="jobTime" />
+        </div>
+        <div class="form-group">
+          <label>Crew / Assigned To</label>
+          <input type="text" id="jobCrew" placeholder="e.g. Leo, Tyler" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="jobStatus">
+            <option value="scheduled">Scheduled</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="jobNotes" placeholder="Special instructions, access info, equipment needed…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="jobModal">Cancel</button>
+      <button class="btn btn-primary" id="saveJobBtn">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-backdrop" id="noteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="noteModalTitle">New Note</h2>
+      <button class="modal-close" data-close="noteModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="noteId" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="noteTitle" placeholder="Quick reminder, job tip, process note…" />
+        </div>
+        <div class="form-group">
+          <label>Body</label>
+          <textarea id="noteBody" style="min-height:140px;" placeholder="Write your note here…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="noteModal">Cancel</button>
+      <button class="btn btn-primary" id="saveNoteBtn">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FIREBASE + APP LOGIC
+═══════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged, signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore,
+  collection, doc,
+  addDoc, setDoc, updateDoc, deleteDoc,
+  getDocs, query, orderBy, where, serverTimestamp,
+  onSnapshot
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyAWcn88S0JhXwCiFzuYd9DJh_BFE5taPzc",
+  authDomain:        "happyshores-def2b.firebaseapp.com",
+  projectId:         "happyshores-def2b",
+  storageBucket:     "happyshores-def2b.firebasestorage.app",
+  messagingSenderId: "595626316219",
+  appId:             "1:595626316219:web:b89d2347883910f4eb8f49e"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
+
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => {
+    if (e.target === bd) closeModal(bd.id);
+  });
+});
+
+function fmt(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtDate(str) {
+  if (!str) return '—';
+  const [y,m,d] = str.split('-');
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${names[+m-1]} ${+d}, ${y}`;
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+function dueDays(str) {
+  if (!str) return null;
+  return Math.ceil((new Date(str) - new Date()) / 86400000);
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function statusBadge(s) {
+  const map = {
+    draft:      'badge-gray',
+    sent:       'badge-blue',
+    paid:       'badge-green',
+    pending:    'badge-yellow',
+    approved:   'badge-green',
+    denied:     'badge-red',
+    expired:    'badge-gray',
+    scheduled:  'badge-blue',
+    'in-progress': 'badge-teal',
+    completed:  'badge-green',
+    cancelled:  'badge-red',
+  };
+  return `<span class="badge ${map[s] ?? 'badge-gray'}">${esc(s)}</span>`;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+const panelTitles = {
+  home: 'Dashboard', customers: 'Customers', invoices: 'Invoicing',
+  permits: 'Dane Co. Permits', jobs: 'Job Schedule', notes: 'Team Notes',
+};
+
+document.querySelectorAll('.nav-link[data-panel]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+    document.getElementById('pageTitle').textContent = panelTitles[btn.dataset.panel] ?? '';
+  });
+});
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+let currentUser = null;
+let allCustomers = [];
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.replace('../employee.html'); return; }
+  currentUser = user;
+  document.getElementById('authGate').style.display = 'none';
+
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('userAvatar').textContent = name.slice(0,2).toUpperCase();
+  document.getElementById('userName').textContent   = name;
+  document.getElementById('userEmail').textContent  = user.email;
+  document.getElementById('welcomeMsg').textContent = `Welcome back, ${name}!`;
+
+  const now = new Date();
+  document.getElementById('welcomeDate').textContent =
+    now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  loadAll();
+});
+
+document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+// ── Load all data ─────────────────────────────────────────────────────────────
+
+async function loadAll() {
+  await Promise.all([loadCustomers(), loadInvoices(), loadPermits(), loadJobs(), loadNotes()]);
+  refreshDashboardStats();
+}
+
+// ══════════════════════════════════════
+// CUSTOMERS
+// ══════════════════════════════════════
+
+let filteredCustomers = [];
+
+async function loadCustomers() {
+  const snap = await getDocs(query(collection(db, 'customers'), orderBy('name')));
+  allCustomers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  filteredCustomers = [...allCustomers];
+  renderCustomers(filteredCustomers);
+  populateCustomerDropdowns();
+}
+
+function renderCustomers(list) {
+  const tbody = document.getElementById('customerTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="es-icon">👥</div><p>No customers yet. Click "+ Add Customer" to get started.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.lake || '—')}</td>
+      <td>${esc(c.phone || '—')}</td>
+      <td>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:var(--teal)">${esc(c.email)}</a>` : '—'}</td>
+      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-muted);font-size:.8125rem">${esc(c.notes || '—')}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editCustomer('${c.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}','${esc(c.name)}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function populateCustomerDropdowns() {
+  ['invCustomer','jobCustomer'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Select customer —</option>' +
+      allCustomers.map(c => `<option value="${c.id}" data-name="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    if (cur) sel.value = cur;
+  });
+}
+
+document.getElementById('customerSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  filteredCustomers = allCustomers.filter(c =>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.lake||'').toLowerCase().includes(q) ||
+    (c.email||'').toLowerCase().includes(q) ||
+    (c.phone||'').includes(q)
+  );
+  renderCustomers(filteredCustomers);
+});
+
+document.getElementById('addCustomerBtn').addEventListener('click', () => {
+  clearCustomerForm();
+  document.getElementById('customerModalTitle').textContent = 'Add Customer';
+  openModal('customerModal');
+});
+
+function clearCustomerForm() {
+  ['custId','custName','custPhone','custEmail','custLake','custAddress','custNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+window.editCustomer = function(id) {
+  const c = allCustomers.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('custId').value      = c.id;
+  document.getElementById('custName').value    = c.name    || '';
+  document.getElementById('custPhone').value   = c.phone   || '';
+  document.getElementById('custEmail').value   = c.email   || '';
+  document.getElementById('custLake').value    = c.lake    || '';
+  document.getElementById('custAddress').value = c.address || '';
+  document.getElementById('custNotes').value   = c.notes   || '';
+  document.getElementById('customerModalTitle').textContent = 'Edit Customer';
+  openModal('customerModal');
+};
+
+window.deleteCustomer = async function(id, name) {
+  if (!confirm(`Delete customer "${name}"? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, 'customers', id));
+  toast(`${name} deleted.`, 'error');
+  loadCustomers();
+  refreshDashboardStats();
+};
+
+document.getElementById('saveCustomerBtn').addEventListener('click', async () => {
+  const name = document.getElementById('custName').value.trim();
+  if (!name) { toast('Name is required.', 'error'); return; }
+  const id = document.getElementById('custId').value;
+  const data = {
+    name,
+    phone:   document.getElementById('custPhone').value.trim(),
+    email:   document.getElementById('custEmail').value.trim(),
+    lake:    document.getElementById('custLake').value.trim(),
+    address: document.getElementById('custAddress').value.trim(),
+    notes:   document.getElementById('custNotes').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+  if (id) {
+    await updateDoc(doc(db, 'customers', id), data);
+    toast('Customer updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'customers'), data);
+    toast('Customer added.', 'success');
+  }
+  closeModal('customerModal');
+  loadCustomers();
+  refreshDashboardStats();
+});
+
+// ══════════════════════════════════════
+// INVOICING
+// ══════════════════════════════════════
+
+let allInvoices = [];
+let invFilter = 'all';
+let lineItems = [];
+
+async function loadInvoices() {
+  const snap = await getDocs(query(collection(db, 'invoices'), orderBy('createdAt', 'desc')));
+  allInvoices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderInvoices();
+}
+
+function renderInvoices() {
+  const list = invFilter === 'all' ? allInvoices : allInvoices.filter(i => i.status === invFilter);
+  const tbody = document.getElementById('invoiceTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="es-icon">🧾</div><p>No invoices${invFilter !== 'all' ? ` with status "${invFilter}"` : ''} yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((inv, idx) => {
+    const total = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
+    const due = inv.dueDate ? dueDays(inv.dueDate) : null;
+    const dueLabel = due === null ? '—' : due < 0 ? `<span style="color:var(--error)">${Math.abs(due)}d overdue</span>` : due === 0 ? `<span style="color:var(--error)">Due today</span>` : `${due}d`;
+    return `
+      <tr>
+        <td style="font-weight:700;color:var(--teal)">#${String(inv.invoiceNumber || (allInvoices.length - idx)).padStart(4,'0')}</td>
+        <td>${esc(inv.customerName || '—')}</td>
+        <td>${fmtDate(inv.date)}</td>
+        <td>${dueLabel}</td>
+        <td style="font-weight:700">$${total.toFixed(2)}</td>
+        <td>${statusBadge(inv.status)}</td>
+        <td>
+          <div class="td-actions">
+            <button class="btn btn-ghost btn-sm" onclick="editInvoice('${inv.id}')">Edit</button>
+            ${inv.status !== 'paid' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="markPaid('${inv.id}')">Mark Paid</button>` : ''}
+            <button class="btn btn-danger btn-sm" onclick="deleteInvoice('${inv.id}')">Del</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('[data-inv-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-inv-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    invFilter = btn.dataset.invFilter;
+    renderInvoices();
+  });
+});
+
+function buildLineItemRow(item = { desc:'', qty:1, price:0 }) {
+  const row = document.createElement('div');
+  row.className = 'invoice-item-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Description" value="${esc(item.desc)}" class="li-desc" style="padding:.5rem .75rem;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:.875rem;width:100%;" />
+    <input type="number" placeholder="Qty" value="${item.qty}" min="1" class="li-qty" style="padding:.5rem;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:.875rem;width:100%;text-align:center;" />
+    <input type="number" placeholder="Price" value="${item.price}" step="0.01" min="0" class="li-price" style="padding:.5rem;border:1.5px solid var(--gray-200);border-radius:6px;font-family:inherit;font-size:.875rem;width:100%;" />
+    <button onclick="this.closest('.invoice-item-row').remove();updateInvTotal()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);padding:.25rem;">✕</button>
+  `;
+  row.querySelectorAll('input').forEach(i => i.addEventListener('input', updateInvTotal));
+  return row;
+}
+
+window.updateInvTotal = function() {
+  const container = document.getElementById('invItemsContainer');
+  let total = 0;
+  container.querySelectorAll('.invoice-item-row').forEach(row => {
+    const qty = +row.querySelector('.li-qty').value || 0;
+    const price = +row.querySelector('.li-price').value || 0;
+    total += qty * price;
+  });
+  document.getElementById('invTotalDisplay').textContent = '$' + total.toFixed(2);
+};
+
+document.getElementById('addLineItem').addEventListener('click', () => {
+  document.getElementById('invItemsContainer').appendChild(buildLineItemRow());
+});
+
+function clearInvoiceForm() {
+  document.getElementById('invId').value = '';
+  document.getElementById('invCustomer').value = '';
+  document.getElementById('invDate').value = today();
+  const due = new Date(); due.setDate(due.getDate() + 30);
+  document.getElementById('invDue').value = due.toISOString().slice(0,10);
+  document.getElementById('invStatus').value = 'draft';
+  document.getElementById('invNotes').value = '';
+  document.getElementById('invItemsContainer').innerHTML = '';
+  document.getElementById('invItemsContainer').appendChild(buildLineItemRow({ desc:'Lake Weed Removal', qty:1, price:0 }));
+  updateInvTotal();
+}
+
+document.getElementById('addInvoiceBtn').addEventListener('click', () => {
+  clearInvoiceForm();
+  document.getElementById('invoiceModalTitle').textContent = 'New Invoice';
+  openModal('invoiceModal');
+});
+
+window.editInvoice = function(id) {
+  const inv = allInvoices.find(x => x.id === id);
+  if (!inv) return;
+  document.getElementById('invId').value       = inv.id;
+  document.getElementById('invCustomer').value = inv.customerId || '';
+  document.getElementById('invDate').value     = inv.date || today();
+  document.getElementById('invDue').value      = inv.dueDate || '';
+  document.getElementById('invStatus').value   = inv.status || 'draft';
+  document.getElementById('invNotes').value    = inv.notes || '';
+  const container = document.getElementById('invItemsContainer');
+  container.innerHTML = '';
+  (inv.items || []).forEach(it => container.appendChild(buildLineItemRow(it)));
+  if (!inv.items?.length) container.appendChild(buildLineItemRow());
+  updateInvTotal();
+  document.getElementById('invoiceModalTitle').textContent = 'Edit Invoice';
+  openModal('invoiceModal');
+};
+
+window.markPaid = async function(id) {
+  await updateDoc(doc(db, 'invoices', id), { status: 'paid', updatedAt: serverTimestamp() });
+  toast('Invoice marked as paid.', 'success');
+  loadInvoices();
+  refreshDashboardStats();
+};
+
+window.deleteInvoice = async function(id) {
+  if (!confirm('Delete this invoice?')) return;
+  await deleteDoc(doc(db, 'invoices', id));
+  toast('Invoice deleted.', 'error');
+  loadInvoices();
+  refreshDashboardStats();
+};
+
+document.getElementById('saveInvoiceBtn').addEventListener('click', async () => {
+  const custId = document.getElementById('invCustomer').value;
+  const custEl = document.getElementById('invCustomer');
+  const custName = custEl.options[custEl.selectedIndex]?.dataset.name || '';
+  if (!custId) { toast('Select a customer.', 'error'); return; }
+
+  const items = [];
+  document.getElementById('invItemsContainer').querySelectorAll('.invoice-item-row').forEach(row => {
+    items.push({
+      desc:  row.querySelector('.li-desc').value.trim(),
+      qty:   +row.querySelector('.li-qty').value || 1,
+      price: +row.querySelector('.li-price').value || 0,
+    });
+  });
+
+  const id = document.getElementById('invId').value;
+  const data = {
+    customerId:   custId,
+    customerName: custName,
+    date:         document.getElementById('invDate').value,
+    dueDate:      document.getElementById('invDue').value,
+    status:       document.getElementById('invStatus').value,
+    notes:        document.getElementById('invNotes').value.trim(),
+    items,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (id) {
+    await updateDoc(doc(db, 'invoices', id), data);
+    toast('Invoice updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    data.invoiceNumber = Date.now();
+    await addDoc(collection(db, 'invoices'), data);
+    toast('Invoice created.', 'success');
+  }
+  closeModal('invoiceModal');
+  loadInvoices();
+  refreshDashboardStats();
+});
+
+// ══════════════════════════════════════
+// PERMITS
+// ══════════════════════════════════════
+
+let allPermits = [];
+
+async function loadPermits() {
+  const snap = await getDocs(query(collection(db, 'permits'), orderBy('createdAt', 'desc')));
+  allPermits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPermits();
+}
+
+function renderPermits() {
+  const tbody = document.getElementById('permitTbody');
+
+  const counts = { total: allPermits.length, pending: 0, approved: 0, denied: 0 };
+  allPermits.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; });
+  document.getElementById('pStatTotal').textContent    = counts.total;
+  document.getElementById('pStatPending').textContent  = counts.pending;
+  document.getElementById('pStatApproved').textContent = counts.approved;
+  document.getElementById('pStatDenied').textContent   = counts.denied;
+
+  if (!allPermits.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📋</div><p>No permit applications yet. Click "+ New Permit Application" to start tracking.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = allPermits.map(p => `
+    <tr>
+      <td><strong>${esc(p.customerName || '—')}</strong></td>
+      <td>${esc(p.lake || '—')}</td>
+      <td style="font-size:.8125rem;color:var(--text-muted)">${esc(p.address || '—')}</td>
+      <td>${fmtDate(p.appliedDate)}</td>
+      <td style="font-weight:600;color:var(--teal)">${esc(p.permitNumber || '—')}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="max-width:160px;font-size:.8125rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.notes || '—')}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editPermit('${p.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePermit('${p.id}')">Del</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('addPermitBtn').addEventListener('click', () => {
+  clearPermitForm();
+  document.getElementById('permitModalTitle').textContent = 'New Permit Application';
+  openModal('permitModal');
+});
+
+function clearPermitForm() {
+  ['permId','permCustomer','permLake','permAddress','permNumber','permNotes','permExpires'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('permApplied').value = today();
+  document.getElementById('permStatus').value = 'pending';
+}
+
+window.editPermit = function(id) {
+  const p = allPermits.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('permId').value       = p.id;
+  document.getElementById('permCustomer').value = p.customerName || '';
+  document.getElementById('permLake').value     = p.lake         || '';
+  document.getElementById('permAddress').value  = p.address      || '';
+  document.getElementById('permApplied').value  = p.appliedDate  || '';
+  document.getElementById('permNumber').value   = p.permitNumber || '';
+  document.getElementById('permStatus').value   = p.status       || 'pending';
+  document.getElementById('permExpires').value  = p.expiresDate  || '';
+  document.getElementById('permNotes').value    = p.notes        || '';
+  document.getElementById('permitModalTitle').textContent = 'Edit Permit';
+  openModal('permitModal');
+};
+
+window.deletePermit = async function(id) {
+  if (!confirm('Delete this permit record?')) return;
+  await deleteDoc(doc(db, 'permits', id));
+  toast('Permit deleted.', 'error');
+  loadPermits();
+  refreshDashboardStats();
+};
+
+document.getElementById('savePermitBtn').addEventListener('click', async () => {
+  const customer = document.getElementById('permCustomer').value.trim();
+  const lake     = document.getElementById('permLake').value.trim();
+  if (!customer || !lake) { toast('Customer name and lake are required.', 'error'); return; }
+
+  const id = document.getElementById('permId').value;
+  const data = {
+    customerName: customer,
+    lake,
+    address:      document.getElementById('permAddress').value.trim(),
+    appliedDate:  document.getElementById('permApplied').value,
+    permitNumber: document.getElementById('permNumber').value.trim(),
+    status:       document.getElementById('permStatus').value,
+    expiresDate:  document.getElementById('permExpires').value,
+    notes:        document.getElementById('permNotes').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (id) {
+    await updateDoc(doc(db, 'permits', id), data);
+    toast('Permit updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'permits'), data);
+    toast('Permit application saved.', 'success');
+  }
+  closeModal('permitModal');
+  loadPermits();
+  refreshDashboardStats();
+});
+
+// ══════════════════════════════════════
+// JOBS
+// ══════════════════════════════════════
+
+let allJobs = [];
+let jobFilter = 'upcoming';
+
+async function loadJobs() {
+  const snap = await getDocs(query(collection(db, 'jobs'), orderBy('scheduledDate', 'asc')));
+  allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderJobs();
+}
+
+function renderJobs() {
+  const todayStr = today();
+  let list;
+  if (jobFilter === 'upcoming') {
+    list = allJobs.filter(j => j.scheduledDate >= todayStr && j.status !== 'cancelled' && j.status !== 'completed');
+  } else if (jobFilter === 'completed') {
+    list = allJobs.filter(j => j.status === 'completed');
+  } else {
+    list = [...allJobs];
+  }
+
+  const container = document.getElementById('jobList');
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><p>No ${jobFilter === 'upcoming' ? 'upcoming' : ''} jobs found.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(j => {
+    const d = j.scheduledDate ? new Date(j.scheduledDate + 'T12:00:00') : null;
+    const day = d ? d.getDate() : '?';
+    const mon = d ? d.toLocaleString('en-US',{month:'short'}) : '';
+    const timeStr = j.scheduledTime ? ` @ ${j.scheduledTime}` : '';
+    return `
+      <div class="job-card">
+        <div class="job-date">
+          <div class="job-date__day">${day}</div>
+          <div class="job-date__mon">${mon}</div>
+        </div>
+        <div class="job-info">
+          <h4>${esc(j.serviceType || 'Service')}</h4>
+          <p>${esc(j.customerName || '—')}${timeStr}${j.crew ? ' · ' + esc(j.crew) : ''}</p>
+          ${j.notes ? `<p style="margin-top:.2rem;font-size:.78rem;color:var(--text-muted)">${esc(j.notes)}</p>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
+          ${statusBadge(j.status)}
+          <div class="td-actions">
+            <button class="btn btn-ghost btn-sm" onclick="editJob('${j.id}')">Edit</button>
+            ${j.status !== 'completed' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="markJobDone('${j.id}')">✓ Done</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+document.querySelectorAll('[data-job-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-job-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    jobFilter = btn.dataset.jobFilter;
+    renderJobs();
+  });
+});
+
+document.getElementById('addJobBtn').addEventListener('click', () => {
+  clearJobForm();
+  document.getElementById('jobModalTitle').textContent = 'Add Job';
+  openModal('jobModal');
+});
+
+function clearJobForm() {
+  ['jobId','jobCrew','jobNotes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('jobCustomer').value = '';
+  document.getElementById('jobService').value  = 'Lake Weed Removal';
+  document.getElementById('jobDate').value     = today();
+  document.getElementById('jobTime').value     = '';
+  document.getElementById('jobStatus').value   = 'scheduled';
+}
+
+window.editJob = function(id) {
+  const j = allJobs.find(x => x.id === id);
+  if (!j) return;
+  document.getElementById('jobId').value       = j.id;
+  document.getElementById('jobCustomer').value = j.customerId      || '';
+  document.getElementById('jobService').value  = j.serviceType     || 'Lake Weed Removal';
+  document.getElementById('jobDate').value     = j.scheduledDate   || '';
+  document.getElementById('jobTime').value     = j.scheduledTime   || '';
+  document.getElementById('jobCrew').value     = j.crew            || '';
+  document.getElementById('jobStatus').value   = j.status          || 'scheduled';
+  document.getElementById('jobNotes').value    = j.notes           || '';
+  document.getElementById('jobModalTitle').textContent = 'Edit Job';
+  openModal('jobModal');
+};
+
+window.markJobDone = async function(id) {
+  await updateDoc(doc(db, 'jobs', id), { status: 'completed', updatedAt: serverTimestamp() });
+  toast('Job marked complete.', 'success');
+  loadJobs();
+  refreshDashboardStats();
+};
+
+document.getElementById('saveJobBtn').addEventListener('click', async () => {
+  const custSel  = document.getElementById('jobCustomer');
+  const custId   = custSel.value;
+  const custName = custSel.options[custSel.selectedIndex]?.dataset.name || '';
+  const date     = document.getElementById('jobDate').value;
+  if (!custId) { toast('Select a customer.', 'error'); return; }
+  if (!date)   { toast('Scheduled date is required.', 'error'); return; }
+
+  const id = document.getElementById('jobId').value;
+  const data = {
+    customerId:    custId,
+    customerName:  custName,
+    serviceType:   document.getElementById('jobService').value,
+    scheduledDate: date,
+    scheduledTime: document.getElementById('jobTime').value,
+    crew:          document.getElementById('jobCrew').value.trim(),
+    status:        document.getElementById('jobStatus').value,
+    notes:         document.getElementById('jobNotes').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (id) {
+    await updateDoc(doc(db, 'jobs', id), data);
+    toast('Job updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'jobs'), data);
+    toast('Job scheduled.', 'success');
+  }
+  closeModal('jobModal');
+  loadJobs();
+  refreshDashboardStats();
+});
+
+// ══════════════════════════════════════
+// NOTES
+// ══════════════════════════════════════
+
+let allNotes = [];
+
+async function loadNotes() {
+  const snap = await getDocs(query(collection(db, 'notes'), orderBy('updatedAt', 'desc')));
+  allNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderNotes();
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notesGrid');
+  if (!allNotes.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📝</div><p>No notes yet. Add one to share with the team.</p></div>`;
+    return;
+  }
+  grid.innerHTML = allNotes.map(n => `
+    <div class="note-card">
+      <h4>${esc(n.title)}</h4>
+      <p>${esc(n.body || '')}</p>
+      <div class="note-meta">
+        <span>${esc(n.author || '')}</span>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editNote('${n.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteNote('${n.id}')">Del</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('addNoteBtn').addEventListener('click', () => {
+  document.getElementById('noteId').value    = '';
+  document.getElementById('noteTitle').value = '';
+  document.getElementById('noteBody').value  = '';
+  document.getElementById('noteModalTitle').textContent = 'New Note';
+  openModal('noteModal');
+});
+
+window.editNote = function(id) {
+  const n = allNotes.find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('noteId').value    = n.id;
+  document.getElementById('noteTitle').value = n.title || '';
+  document.getElementById('noteBody').value  = n.body  || '';
+  document.getElementById('noteModalTitle').textContent = 'Edit Note';
+  openModal('noteModal');
+};
+
+window.deleteNote = async function(id) {
+  if (!confirm('Delete this note?')) return;
+  await deleteDoc(doc(db, 'notes', id));
+  toast('Note deleted.', 'error');
+  loadNotes();
+};
+
+document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+  const title = document.getElementById('noteTitle').value.trim();
+  if (!title) { toast('Title is required.', 'error'); return; }
+  const id = document.getElementById('noteId').value;
+  const name = currentUser?.displayName || currentUser?.email?.split('@')[0] || '';
+  const data = {
+    title,
+    body:      document.getElementById('noteBody').value.trim(),
+    author:    name,
+    updatedAt: serverTimestamp(),
+  };
+  if (id) {
+    await updateDoc(doc(db, 'notes', id), data);
+    toast('Note updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'notes'), data);
+    toast('Note saved.', 'success');
+  }
+  closeModal('noteModal');
+  loadNotes();
+});
+
+// ══════════════════════════════════════
+// DASHBOARD STATS
+// ══════════════════════════════════════
+
+function refreshDashboardStats() {
+  document.getElementById('statCustomers').textContent = allCustomers.length;
+
+  const openInv = allInvoices.filter(i => i.status !== 'paid').length;
+  document.getElementById('statInvoices').textContent = openInv;
+
+  const activePermits = allPermits.filter(p => p.status === 'approved').length;
+  document.getElementById('statPermits').textContent = activePermits;
+
+  const todayStr = today();
+  const weekStr  = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
+  const upcomingJobs = allJobs.filter(j =>
+    j.scheduledDate >= todayStr && j.scheduledDate <= weekStr &&
+    j.status !== 'cancelled' && j.status !== 'completed'
+  ).length;
+  document.getElementById('statJobs').textContent = upcomingJobs;
+}
+</script>
+</body>
+</html>

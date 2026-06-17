@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Happy Shores Co — Employee Portal</title>
+  <link rel="icon" href="logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0c2e2e;
+      --teal: #0d7370;
+      --teal-light: #148f8b;
+      --teal-dark: #0a5553;
+      --teal-bg: #0f3c3b;
+      --gold: #e8a500;
+      --white: #ffffff;
+      --gray-50: #f7fafa;
+      --gray-100: #eef4f3;
+      --gray-200: #d8e8e6;
+      --text-muted: #4a7070;
+      --error: #c0392b;
+      --radius-md: 14px;
+      --shadow-lg: 0 20px 50px rgba(12,46,46,.18), 0 4px 16px rgba(12,46,46,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--teal-bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(13,115,112,.4) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(232,165,0,.1) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .login-card {
+      position: relative;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 420px;
+      padding: 2.5rem 2.25rem 2rem;
+    }
+
+    .login-logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-logo img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+    }
+
+    .login-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--ink);
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: .35rem;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      font-size: .875rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    label {
+      display: block;
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: .4rem;
+      letter-spacing: .01em;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: .7rem 1rem;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: .9375rem;
+      font-family: inherit;
+      color: var(--ink);
+      background: var(--gray-50);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--teal);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(13,115,112,.12);
+    }
+
+    input.error-field {
+      border-color: var(--error);
+    }
+
+    .error-msg {
+      display: none;
+      font-size: .8125rem;
+      color: var(--error);
+      margin-top: .35rem;
+    }
+
+    .error-msg.visible { display: block; }
+
+    .btn-login {
+      display: block;
+      width: 100%;
+      padding: .8rem 1rem;
+      margin-top: 1.5rem;
+      background: var(--teal);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: .01em;
+      transition: background .15s, transform .1s;
+    }
+
+    .btn-login:hover { background: var(--teal-light); }
+    .btn-login:active { transform: scale(.98); }
+
+    .btn-login:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto;
+    }
+
+    .btn-login.loading .btn-text { display: none; }
+    .btn-login.loading .spinner { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .login-footer {
+      margin-top: 1.75rem;
+      text-align: center;
+      font-size: .8125rem;
+      color: var(--text-muted);
+    }
+
+    .login-footer a {
+      color: var(--teal);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .login-footer a:hover { text-decoration: underline; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      margin-top: 1.25rem;
+      font-size: .8125rem;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      transition: color .15s;
+    }
+
+    .back-link:hover { color: rgba(255,255,255,.9); }
+  </style>
+</head>
+<body>
+
+  <a class="back-link" href="index.html">← Back to main site</a>
+
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="logo.png" alt="Happy Shores Co" />
+    </div>
+    <h1 class="login-title">Employee Portal</h1>
+    <p class="login-subtitle">Happy Shores Co — Staff Access</p>
+
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@happyshoresco.com" autocomplete="email" />
+        <span class="error-msg" id="emailErr">Please enter a valid email.</span>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
+        <span class="error-msg" id="passwordErr">Please enter your password.</span>
+      </div>
+      <span class="error-msg" id="authErr" style="display:none; margin-top:.5rem;"></span>
+      <button type="submit" class="btn-login" id="loginBtn">
+        <span class="btn-text">Sign in</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="login-footer">
+      Forgot your password? <a href="#" id="resetLink">Reset it</a>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged }
+      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    // ─── PASTE YOUR FIREBASE CONFIG HERE ───────────────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAWcn88S0JhXwCiFzuYd9DJh_BFE5taPzc",
+      authDomain:        "happyshores-def2b.firebaseapp.com",
+      projectId:         "happyshores-def2b",
+      storageBucket:     "happyshores-def2b.firebasestorage.app",
+      messagingSenderId: "595626316219",
+      appId:             "1:595626316219:web:b89d2347883910f4eb8f49e",
+      measurementId:     "G-LWM1SR7001"
+    };
+    // ───────────────────────────────────────────────────────────────────────────
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Redirect already-logged-in users straight to the dashboard
+    onAuthStateChanged(auth, user => {
+      if (user) window.location.replace('portal/index.html');
+    });
+
+    const form       = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passInput  = document.getElementById('password');
+    const loginBtn   = document.getElementById('loginBtn');
+    const emailErr   = document.getElementById('emailErr');
+    const passErr    = document.getElementById('passwordErr');
+    const authErr    = document.getElementById('authErr');
+    const resetLink  = document.getElementById('resetLink');
+
+    function setLoading(on) {
+      loginBtn.disabled = on;
+      loginBtn.classList.toggle('loading', on);
+    }
+
+    function clearErrors() {
+      [emailInput, passInput].forEach(el => el.classList.remove('error-field'));
+      [emailErr, passErr, authErr].forEach(el => { el.classList.remove('visible'); el.style.display = ''; });
+    }
+
+    function showAuthError(msg) {
+      authErr.textContent = msg;
+      authErr.style.display = 'block';
+      authErr.classList.add('visible');
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors();
+
+      const email    = emailInput.value.trim();
+      const password = passInput.value;
+      let valid = true;
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        emailInput.classList.add('error-field');
+        emailErr.classList.add('visible');
+        valid = false;
+      }
+      if (!password) {
+        passInput.classList.add('error-field');
+        passErr.classList.add('visible');
+        valid = false;
+      }
+      if (!valid) return;
+
+      setLoading(true);
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged will handle the redirect
+      } catch (err) {
+        setLoading(false);
+        const msg = {
+          'auth/invalid-credential':    'Incorrect email or password.',
+          'auth/user-not-found':        'No account found with that email.',
+          'auth/wrong-password':        'Incorrect password.',
+          'auth/too-many-requests':     'Too many failed attempts. Try again later.',
+          'auth/network-request-failed':'Network error. Check your connection.',
+        }[err.code] ?? 'Sign-in failed. Please try again.';
+        showAuthError(msg);
+      }
+    });
+
+    resetLink.addEventListener('click', async e => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) {
+        emailInput.classList.add('error-field');
+        emailErr.classList.add('visible');
+        emailErr.textContent = 'Enter your email above first.';
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showAuthError('Reset email sent — check your inbox.');
+        authErr.style.color = 'var(--teal)';
+      } catch {
+        showAuthError('Could not send reset email. Check the address and try again.');
+      }
+    });
+  </script>
+</body>
+</html>
