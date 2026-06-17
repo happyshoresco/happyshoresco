@@ -217,3 +217,75 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
 
   return { success: true, sentTo: customerEmail };
 });
+
+// ── Callable function: sendAssignmentEmail ────────────────────────────────────
+exports.sendAssignmentEmail = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
+
+  const { jobId, employeeIds } = data;
+  if (!jobId || !employeeIds?.length) throw new functions.https.HttpsError('invalid-argument', 'jobId and employeeIds required.');
+
+  const jobSnap = await db.collection('jobs').doc(jobId).get();
+  if (!jobSnap.exists) throw new functions.https.HttpsError('not-found', 'Job not found.');
+  const job = jobSnap.data();
+
+  const d = job.scheduledDate ? new Date(job.scheduledDate + 'T12:00:00') : null;
+  const dateStr = d ? d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' }) : '—';
+  const timeStr = job.scheduledTime || '';
+
+  const results = [];
+  for (const empId of employeeIds) {
+    const empSnap = await db.collection('employees').doc(empId).get();
+    if (!empSnap.exists) continue;
+    const emp = empSnap.data();
+    if (!emp.email) continue;
+
+    const allAssigned = (job.assignedEmployees || []).map(e => e.name).join(', ') || emp.name;
+
+    const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f7fafa;padding:0;">
+      <div style="background:#0d7370;padding:28px 32px;">
+        <h1 style="color:#fff;margin:0;font-size:22px;">Happy Shores Co</h1>
+        <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${COMPANY_PHONE} · ${COMPANY_WEBSITE}</p>
+      </div>
+      <div style="background:#fff;padding:32px;">
+        <p style="color:#4a7070;font-size:13px;margin:0 0 8px;">Hi ${emp.name},</p>
+        <p style="color:#0c2e2e;font-size:15px;font-weight:600;margin:0 0 24px;">You've been assigned to a job!</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;border-radius:8px;overflow:hidden;">
+          <tr style="background:#eef4f3;">
+            <td style="padding:10px 14px;font-weight:600;color:#4a7070;width:40%;">Service</td>
+            <td style="padding:10px 14px;color:#0c2e2e;">${job.serviceType || '—'}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;font-weight:600;color:#4a7070;">Customer</td>
+            <td style="padding:10px 14px;color:#0c2e2e;">${job.customerName || '—'}</td>
+          </tr>
+          <tr style="background:#eef4f3;">
+            <td style="padding:10px 14px;font-weight:600;color:#4a7070;">Date</td>
+            <td style="padding:10px 14px;color:#0c2e2e;">${dateStr}${timeStr ? ' @ ' + timeStr : ''}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;font-weight:600;color:#4a7070;">Crew</td>
+            <td style="padding:10px 14px;color:#0c2e2e;">${allAssigned}</td>
+          </tr>
+          ${job.notes ? `<tr style="background:#eef4f3;"><td style="padding:10px 14px;font-weight:600;color:#4a7070;">Notes</td><td style="padding:10px 14px;color:#0c2e2e;">${job.notes}</td></tr>` : ''}
+        </table>
+        <p style="color:#4a7070;font-size:13px;">Questions? Call <strong>${COMPANY_PHONE}</strong> or reply to this email.</p>
+      </div>
+      <div style="background:#081e1e;padding:16px 32px;text-align:center;">
+        <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
+      </div>
+    </div>`;
+
+    await sgMail.send({
+      to:      emp.email,
+      from:    { email: FROM_EMAIL, name: FROM_NAME },
+      subject: `Job Assignment: ${job.serviceType || 'Service'} on ${dateStr}`,
+      html,
+    });
+
+    results.push(emp.email);
+  }
+
+  return { success: true, notified: results };
+});

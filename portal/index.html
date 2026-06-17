@@ -579,6 +579,11 @@
       <span class="icon">📅</span> Job Schedule
     </button>
 
+    <div class="nav-section">Team</div>
+    <button class="nav-link" data-panel="employees">
+      <span class="icon">👷</span> Employees
+    </button>
+
     <div class="nav-section">Tools</div>
     <button class="nav-link" data-panel="notes">
       <span class="icon">📝</span> Team Notes
@@ -844,6 +849,41 @@
       </div>
     </div>
 
+    <!-- ════ EMPLOYEES ════ -->
+    <div class="panel" id="panel-employees">
+      <div class="card">
+        <div class="card-header">
+          <h3>Employees</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <input class="search-input" id="empSearch" placeholder="Search name, role, email…" style="min-width:180px;" />
+            <select class="search-input" id="empRoleFilter" style="min-width:140px;">
+              <option value="">All Roles</option>
+              <option>Crew</option>
+              <option>Lead</option>
+              <option>Admin</option>
+              <option>Other</option>
+            </select>
+            <button class="btn btn-primary" id="addEmpBtn">+ Add Employee</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding-top:.5rem;">
+          <table class="data-table">
+            <thead><tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="empTbody">
+              <tr><td colspan="6"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ════ NOTES ════ -->
     <div class="panel" id="panel-notes">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
@@ -1064,9 +1104,11 @@
           <label>Start Time</label>
           <input type="time" id="jobTime" />
         </div>
-        <div class="form-group">
-          <label>Crew / Assigned To</label>
-          <input type="text" id="jobCrew" placeholder="e.g. Leo, Tyler" />
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Assign Employees</label>
+          <div id="jobEmpPicker" style="display:flex;flex-wrap:wrap;gap:.5rem;padding:.6rem;border:1.5px solid var(--gray-200);border-radius:8px;min-height:42px;background:var(--white);">
+            <span style="color:var(--text-muted);font-size:.875rem;align-self:center;">No employees added yet.</span>
+          </div>
         </div>
         <div class="form-group">
           <label>Status</label>
@@ -1086,6 +1128,57 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" data-close="jobModal">Cancel</button>
       <button class="btn btn-primary" id="saveJobBtn">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- Employee Modal -->
+<div class="modal-backdrop" id="empModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="empModalTitle">Add Employee</h2>
+      <button class="modal-close" data-close="empModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="empId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="empName" placeholder="Jane Smith" />
+        </div>
+        <div class="form-group">
+          <label>Role *</label>
+          <select id="empRole">
+            <option value="Crew">Crew</option>
+            <option value="Lead">Lead</option>
+            <option value="Admin">Admin</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="empEmail" placeholder="jane@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="empPhone" placeholder="(608) 555-0100" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Status</label>
+          <select id="empActive">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="empNotes" placeholder="Certifications, equipment, availability…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="empModal">Cancel</button>
+      <button class="btn btn-primary" id="saveEmpBtn">Save Employee</button>
     </div>
   </div>
 </div>
@@ -1223,7 +1316,8 @@ function statusBadge(s) {
 
 const panelTitles = {
   home: 'Dashboard', customers: 'Customers', invoices: 'Invoicing',
-  permits: 'Dane Co. Permits', jobs: 'Job Schedule', notes: 'Team Notes',
+  permits: 'Dane Co. Permits', jobs: 'Job Schedule',
+  employees: 'Employees', notes: 'Team Notes',
 };
 
 document.querySelectorAll('.nav-link[data-panel]').forEach(btn => {
@@ -1264,7 +1358,7 @@ document.getElementById('signOutBtn').addEventListener('click', () => signOut(au
 // ── Load all data ─────────────────────────────────────────────────────────────
 
 async function loadAll() {
-  await Promise.all([loadCustomers(), loadInvoices(), loadPermits(), loadJobs(), loadNotes()]);
+  await Promise.all([loadCustomers(), loadInvoices(), loadPermits(), loadJobs(), loadNotes(), loadEmployees()]);
   refreshDashboardStats();
 }
 
@@ -1816,7 +1910,8 @@ function renderJobs() {
         </div>
         <div class="job-info">
           <h4>${esc(j.serviceType || 'Service')}</h4>
-          <p>${esc(j.customerName || '—')}${timeStr}${j.crew ? ' · ' + esc(j.crew) : ''}</p>
+          <p>${esc(j.customerName || '—')}${timeStr}</p>
+          ${(j.assignedEmployees||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem">${(j.assignedEmployees||[]).map(e=>`<span style="background:var(--teal-bg);color:var(--teal-dark);font-size:.72rem;font-weight:600;padding:.15rem .5rem;border-radius:99px;">👷 ${esc(e.name)}</span>`).join('')}</div>` : ''}
           ${j.notes ? `<p style="margin-top:.2rem;font-size:.78rem;color:var(--text-muted)">${esc(j.notes)}</p>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
@@ -1848,12 +1943,13 @@ document.getElementById('addJobBtn').addEventListener('click', () => {
 });
 
 function clearJobForm() {
-  ['jobId','jobCrew','jobNotes'].forEach(id => { document.getElementById(id).value = ''; });
+  ['jobId','jobNotes'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('jobCustomer').value = '';
   document.getElementById('jobService').value  = 'Lake Weed Removal';
   document.getElementById('jobDate').value     = today();
   document.getElementById('jobTime').value     = '';
   document.getElementById('jobStatus').value   = 'scheduled';
+  renderEmpPicker([]);
 }
 
 window.editJob = function(id) {
@@ -1864,9 +1960,9 @@ window.editJob = function(id) {
   document.getElementById('jobService').value  = j.serviceType     || 'Lake Weed Removal';
   document.getElementById('jobDate').value     = j.scheduledDate   || '';
   document.getElementById('jobTime').value     = j.scheduledTime   || '';
-  document.getElementById('jobCrew').value     = j.crew            || '';
   document.getElementById('jobStatus').value   = j.status          || 'scheduled';
   document.getElementById('jobNotes').value    = j.notes           || '';
+  renderEmpPicker(j.assignedEmployees || []);
   document.getElementById('jobModalTitle').textContent = 'Edit Job';
   openModal('jobModal');
 };
@@ -1886,31 +1982,200 @@ document.getElementById('saveJobBtn').addEventListener('click', async () => {
   if (!custId) { toast('Select a customer.', 'error'); return; }
   if (!date)   { toast('Scheduled date is required.', 'error'); return; }
 
+  const selectedEmps = getSelectedEmployees();
+  const crew = selectedEmps.map(e => e.name).join(', ');
+
   const id = document.getElementById('jobId').value;
   const data = {
-    customerId:    custId,
-    customerName:  custName,
-    serviceType:   document.getElementById('jobService').value,
-    scheduledDate: date,
-    scheduledTime: document.getElementById('jobTime').value,
-    crew:          document.getElementById('jobCrew').value.trim(),
-    status:        document.getElementById('jobStatus').value,
-    notes:         document.getElementById('jobNotes').value.trim(),
-    updatedAt: serverTimestamp(),
+    customerId:        custId,
+    customerName:      custName,
+    serviceType:       document.getElementById('jobService').value,
+    scheduledDate:     date,
+    scheduledTime:     document.getElementById('jobTime').value,
+    crew:              crew,
+    assignedEmployees: selectedEmps,
+    status:            document.getElementById('jobStatus').value,
+    notes:             document.getElementById('jobNotes').value.trim(),
+    updatedAt:         serverTimestamp(),
   };
 
+  let jobId = id;
   if (id) {
     await updateDoc(doc(db, 'jobs', id), data);
     toast('Job updated.', 'success');
   } else {
     data.createdAt = serverTimestamp();
-    await addDoc(collection(db, 'jobs'), data);
+    const ref = await addDoc(collection(db, 'jobs'), data);
+    jobId = ref.id;
     toast('Job scheduled.', 'success');
   }
+
+  // Find newly assigned employees (not previously assigned)
+  const prevJob = allJobs.find(j => j.id === id);
+  const prevIds = (prevJob?.assignedEmployees || []).map(e => e.id);
+  const newlyAssigned = selectedEmps.filter(e => !prevIds.includes(e.id));
+  if (newlyAssigned.length > 0) {
+    try {
+      const notify = httpsCallable(functions, 'sendAssignmentEmail');
+      await notify({ jobId, employeeIds: newlyAssigned.map(e => e.id) });
+    } catch(e) {
+      console.warn('Assignment email failed:', e.message);
+    }
+  }
+
   closeModal('jobModal');
   loadJobs();
   refreshDashboardStats();
 });
+
+// ══════════════════════════════════════
+// EMPLOYEES
+// ══════════════════════════════════════
+
+let allEmployees = [];
+
+async function loadEmployees() {
+  const snap = await getDocs(query(collection(db, 'employees'), orderBy('name', 'asc')));
+  allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderEmployees();
+}
+
+function renderEmployees() {
+  const q    = (document.getElementById('empSearch')?.value || '').toLowerCase();
+  const role = document.getElementById('empRoleFilter')?.value || '';
+  let list = [...allEmployees];
+  if (q)    list = list.filter(e => (e.name+e.email+e.role).toLowerCase().includes(q));
+  if (role) list = list.filter(e => e.role === role);
+
+  const tbody = document.getElementById('empTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="es-icon">👷</div><p>No employees found.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(e => `
+    <tr>
+      <td style="font-weight:600">${esc(e.name)}</td>
+      <td><span style="background:var(--teal-bg);color:var(--teal-dark);font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:99px;">${esc(e.role||'')}</span></td>
+      <td>${esc(e.phone||'—')}</td>
+      <td>${esc(e.email||'—')}</td>
+      <td><span style="background:${e.active!==false?'#d1fae5':'#fee2e2'};color:${e.active!==false?'#065f46':'#991b1b'};font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:99px;">${e.active!==false?'Active':'Inactive'}</span></td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editEmployee('${e.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${e.id}')">Del</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('empSearch').addEventListener('input', renderEmployees);
+document.getElementById('empRoleFilter').addEventListener('change', renderEmployees);
+
+document.getElementById('addEmpBtn').addEventListener('click', () => {
+  clearEmpForm();
+  document.getElementById('empModalTitle').textContent = 'Add Employee';
+  openModal('empModal');
+});
+
+function clearEmpForm() {
+  ['empId','empName','empEmail','empPhone','empNotes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('empRole').value   = 'Crew';
+  document.getElementById('empActive').value = 'true';
+}
+
+window.editEmployee = function(id) {
+  const e = allEmployees.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('empId').value     = e.id;
+  document.getElementById('empName').value   = e.name    || '';
+  document.getElementById('empEmail').value  = e.email   || '';
+  document.getElementById('empPhone').value  = e.phone   || '';
+  document.getElementById('empRole').value   = e.role    || 'Crew';
+  document.getElementById('empActive').value = e.active !== false ? 'true' : 'false';
+  document.getElementById('empNotes').value  = e.notes   || '';
+  document.getElementById('empModalTitle').textContent = 'Edit Employee';
+  openModal('empModal');
+};
+
+window.deleteEmployee = async function(id) {
+  if (!confirm('Delete this employee?')) return;
+  await deleteDoc(doc(db, 'employees', id));
+  toast('Employee deleted.', 'error');
+  loadEmployees();
+};
+
+document.getElementById('saveEmpBtn').addEventListener('click', async () => {
+  const name  = document.getElementById('empName').value.trim();
+  const email = document.getElementById('empEmail').value.trim();
+  if (!name)  { toast('Name is required.', 'error'); return; }
+  if (!email) { toast('Email is required.', 'error'); return; }
+
+  const id = document.getElementById('empId').value;
+  const data = {
+    name,
+    email,
+    phone:     document.getElementById('empPhone').value.trim(),
+    role:      document.getElementById('empRole').value,
+    active:    document.getElementById('empActive').value === 'true',
+    notes:     document.getElementById('empNotes').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (id) {
+    await updateDoc(doc(db, 'employees', id), data);
+    toast('Employee updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'employees'), data);
+    toast('Employee added.', 'success');
+  }
+  closeModal('empModal');
+  loadEmployees();
+});
+
+// ── Employee picker for job modal ─────────────────────────────────────────────
+
+function renderEmpPicker(selected = []) {
+  const picker = document.getElementById('jobEmpPicker');
+  const activeEmps = allEmployees.filter(e => e.active !== false);
+  const selIds = selected.map(e => e.id);
+
+  if (!activeEmps.length) {
+    picker.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem;">No active employees yet.</span>`;
+    return;
+  }
+  picker.innerHTML = activeEmps.map(e => {
+    const checked = selIds.includes(e.id);
+    return `<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;padding:.3rem .6rem;border-radius:6px;border:1.5px solid ${checked?'var(--teal)':'var(--gray-200)'};background:${checked?'var(--teal-bg)':'var(--white)'};font-size:.875rem;transition:all .15s">
+      <input type="checkbox" data-emp-id="${e.id}" data-emp-name="${esc(e.name)}" data-emp-email="${esc(e.email)}" ${checked?'checked':''} style="accent-color:var(--teal);" />
+      <span style="font-weight:${checked?'600':'400'}">${esc(e.name)}</span>
+      <span style="color:var(--text-muted);font-size:.75rem">${esc(e.role||'')}</span>
+    </label>`;
+  }).join('');
+
+  picker.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const lbl = cb.closest('label');
+      const on = cb.checked;
+      lbl.style.borderColor = on ? 'var(--teal)' : 'var(--gray-200)';
+      lbl.style.background  = on ? 'var(--teal-bg)' : 'var(--white)';
+      lbl.querySelector('span').style.fontWeight = on ? '600' : '400';
+    });
+  });
+}
+
+function getSelectedEmployees() {
+  return [...document.querySelectorAll('#jobEmpPicker input[type=checkbox]:checked')].map(cb => ({
+    id:    cb.dataset.empId,
+    name:  cb.dataset.empName,
+    email: cb.dataset.empEmail,
+  }));
+}
+
+// Re-render picker when job modal opens so employee list is fresh
+document.getElementById('addJobBtn').addEventListener('click', () => {
+  renderEmpPicker([]);
+}, true);
 
 // ══════════════════════════════════════
 // NOTES
