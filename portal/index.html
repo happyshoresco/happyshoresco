@@ -394,6 +394,29 @@
     .revenue-bar-fill  { height: 100%; background: linear-gradient(90deg, #059669, #10b981); border-radius: 99px; transition: width .6s ease; }
     .revenue-bar-labels { display: flex; justify-content: space-between; font-size: .8rem; color: var(--text-muted); }
 
+    /* ── QUOTES ── */
+    .quote-check {
+      display: flex; align-items: center; gap: .75rem; cursor: pointer;
+      padding: .65rem .85rem; border-radius: 8px; border: 1.5px solid var(--gray-200);
+      background: var(--white); transition: all .15s; user-select: none;
+    }
+    .quote-check:has(input:checked) { border-color: var(--teal); background: var(--teal-bg); }
+    .quote-check input { accent-color: var(--teal); width: 16px; height: 16px; flex-shrink: 0; }
+    .quote-check > div { flex: 1; }
+    .qc-label { display: block; font-weight: 600; font-size: .875rem; color: var(--ink); }
+    .qc-desc  { display: block; font-size: .78rem; color: var(--text-muted); margin-top: .1rem; }
+    .qc-price { font-weight: 700; color: var(--teal); font-size: .875rem; white-space: nowrap; }
+    .quote-breakdown {
+      background: var(--gray-100); border-radius: 8px; padding: 1rem 1.1rem;
+      border: 1px solid var(--gray-200);
+    }
+    .qb-row { display: flex; justify-content: space-between; font-size: .875rem; padding: .3rem 0;
+      color: var(--text-muted); border-bottom: 1px solid var(--gray-200); }
+    .qb-row:last-of-type { border-bottom: none; }
+    .qb-addon { color: var(--teal-dark); font-weight: 500; }
+    .qb-total { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800;
+      color: var(--ink); margin-top: .6rem; padding-top: .6rem; border-top: 2px solid var(--teal); }
+
     .welcome-card {
       background: linear-gradient(135deg, var(--teal-bg) 0%, var(--teal-dark) 100%);
       border-radius: var(--radius-md);
@@ -571,6 +594,9 @@
     </button>
     <button class="nav-link" data-panel="invoices">
       <span class="icon">🧾</span> Invoicing
+    </button>
+    <button class="nav-link" data-panel="quotes">
+      <span class="icon">💲</span> Quotes
     </button>
     <button class="nav-link" data-panel="permits">
       <span class="icon">📋</span> Dane Co. Permits
@@ -755,6 +781,44 @@
             </thead>
             <tbody id="invoiceTbody">
               <tr><td colspan="7"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading invoices…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ QUOTES ════ -->
+    <div class="panel" id="panel-quotes">
+      <div class="card">
+        <div class="card-header">
+          <h3>Quotes</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <input class="search-input" id="quoteSearch" placeholder="Search customer…" style="min-width:160px;" />
+            <div class="filter-tabs" id="quoteFilterTabs">
+              <button class="filter-tab active" data-quote-filter="all">All</button>
+              <button class="filter-tab" data-quote-filter="draft">Draft</button>
+              <button class="filter-tab" data-quote-filter="sent">Sent</button>
+              <button class="filter-tab" data-quote-filter="accepted">Accepted</button>
+              <button class="filter-tab" data-quote-filter="converted">Converted</button>
+            </div>
+            <button class="btn btn-primary" id="addQuoteBtn">+ New Quote</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding-top:.5rem;">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Area</th>
+              <th>Base Price</th>
+              <th>Add-ons</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="quoteTbody">
+              <tr><td colspan="9"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading…</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1183,6 +1247,111 @@
   </div>
 </div>
 
+<!-- Quote Modal -->
+<div class="modal-backdrop" id="quoteModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 id="quoteModalTitle">New Quote</h2>
+      <button class="modal-close" data-close="quoteModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="quoteId" />
+      <div class="form-grid form-grid-2">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Customer *</label>
+          <select id="quoteCustomer">
+            <option value="">— Select customer —</option>
+          </select>
+        </div>
+
+        <!-- Dimensions -->
+        <div class="form-group">
+          <label>Length (ft) *</label>
+          <input type="number" id="quoteLength" placeholder="e.g. 150" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label>Width (ft) *</label>
+          <input type="number" id="quoteWidth" placeholder="e.g. 80" min="0" step="1" />
+        </div>
+
+        <!-- Add-on checkboxes -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Job Options</label>
+          <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.25rem;">
+            <label class="quote-check">
+              <input type="checkbox" id="quoteOvergrown" />
+              <div>
+                <span class="qc-label">Overgrown Job</span>
+                <span class="qc-desc">Doubles the base clearing price</span>
+              </div>
+              <span class="qc-price">×2</span>
+            </label>
+            <label class="quote-check">
+              <input type="checkbox" id="quotePermit" />
+              <div>
+                <span class="qc-label">Permitting Fee</span>
+                <span class="qc-desc">Dane County lake weed removal permit</span>
+              </div>
+              <span class="qc-price">+$35</span>
+            </label>
+            <label class="quote-check">
+              <input type="checkbox" id="quoteDifficult" />
+              <div>
+                <span class="qc-label">Difficult Access</span>
+                <span class="qc-desc">Hard-to-reach shoreline or property</span>
+              </div>
+              <span class="qc-price">+$25</span>
+            </label>
+            <label class="quote-check">
+              <input type="checkbox" id="quoteDisposal" />
+              <div>
+                <span class="qc-label">Weed Disposal</span>
+                <span class="qc-desc">We haul & dispose at compost site</span>
+              </div>
+              <span class="qc-price">+$40</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Live price breakdown -->
+        <div class="form-group" style="grid-column:1/-1">
+          <div class="quote-breakdown" id="quoteBreakdown">
+            <div class="qb-row"><span>Area</span><span id="qbArea">— sq ft</span></div>
+            <div class="qb-row"><span>Base clearing price</span><span id="qbBase">$0.00</span></div>
+            <div class="qb-row qb-addon" id="qbRowOvergrown" style="display:none"><span>Overgrown multiplier</span><span>×2</span></div>
+            <div class="qb-row qb-addon" id="qbRowPermit" style="display:none"><span>Permitting fee</span><span>+$35.00</span></div>
+            <div class="qb-row qb-addon" id="qbRowDifficult" style="display:none"><span>Difficult access</span><span>+$25.00</span></div>
+            <div class="qb-row qb-addon" id="qbRowDisposal" style="display:none"><span>Weed disposal</span><span>+$40.00</span></div>
+            <div class="qb-total"><span>Total Quote</span><span id="qbTotal">$0.00</span></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select id="quoteStatus">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent to Customer</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valid Until</label>
+          <input type="date" id="quoteExpiry" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="quoteNotes" placeholder="Special conditions, site notes…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="quoteModal">Cancel</button>
+      <button class="btn btn-primary" id="saveQuoteBtn">Save Quote</button>
+    </div>
+  </div>
+</div>
+
 <!-- Note Modal -->
 <div class="modal-backdrop" id="noteModal">
   <div class="modal">
@@ -1316,7 +1485,7 @@ function statusBadge(s) {
 
 const panelTitles = {
   home: 'Dashboard', customers: 'Customers', invoices: 'Invoicing',
-  permits: 'Dane Co. Permits', jobs: 'Job Schedule',
+  quotes: 'Quotes', permits: 'Dane Co. Permits', jobs: 'Job Schedule',
   employees: 'Employees', notes: 'Team Notes',
 };
 
@@ -1358,7 +1527,7 @@ document.getElementById('signOutBtn').addEventListener('click', () => signOut(au
 // ── Load all data ─────────────────────────────────────────────────────────────
 
 async function loadAll() {
-  await Promise.all([loadCustomers(), loadInvoices(), loadPermits(), loadJobs(), loadNotes(), loadEmployees()]);
+  await Promise.all([loadCustomers(), loadInvoices(), loadQuotes(), loadPermits(), loadJobs(), loadNotes(), loadEmployees()]);
   refreshDashboardStats();
 }
 
@@ -1436,7 +1605,7 @@ function renderCustomers(list) {
 }
 
 function populateCustomerDropdowns() {
-  ['invCustomer','jobCustomer'].forEach(id => {
+  ['invCustomer','jobCustomer','quoteCustomer'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const cur = sel.value;
@@ -1717,6 +1886,231 @@ document.getElementById('saveInvoiceBtn').addEventListener('click', async () => 
   loadInvoices();
   refreshDashboardStats();
 });
+
+// ══════════════════════════════════════
+// QUOTES
+// ══════════════════════════════════════
+
+let allQuotes = [];
+let quoteFilter = 'all';
+
+async function loadQuotes() {
+  const snap = await getDocs(query(collection(db, 'quotes'), orderBy('createdAt', 'desc')));
+  allQuotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderQuotes();
+}
+
+function renderQuotes() {
+  const q = (document.getElementById('quoteSearch')?.value || '').toLowerCase();
+  let list = quoteFilter === 'all' ? [...allQuotes] : allQuotes.filter(x => x.status === quoteFilter);
+  if (q) list = list.filter(x => (x.customerName||'').toLowerCase().includes(q));
+
+  const tbody = document.getElementById('quoteTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="es-icon">💲</div><p>No quotes yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((qt, idx) => {
+    const area = (qt.length || 0) * (qt.width || 0);
+    const addons = [
+      qt.overgrown    ? 'Overgrown'  : null,
+      qt.permitFee    ? 'Permit'     : null,
+      qt.difficultAccess ? 'Access'  : null,
+      qt.disposal     ? 'Disposal'   : null,
+    ].filter(Boolean).join(', ');
+    return `<tr>
+      <td style="font-weight:700;color:var(--teal)">#${String(allQuotes.length - idx).padStart(3,'0')}</td>
+      <td>${esc(qt.customerName||'—')}</td>
+      <td style="color:var(--text-muted)">${area ? area.toLocaleString() + ' sq ft' : '—'}</td>
+      <td>$${calcQuoteBase(qt).toFixed(2)}</td>
+      <td style="font-size:.8rem;color:var(--text-muted)">${addons || '—'}</td>
+      <td style="font-weight:700">$${calcQuoteTotal(qt).toFixed(2)}</td>
+      <td>${statusBadge(qt.status)}</td>
+      <td style="font-size:.8rem;color:var(--text-muted)">${fmtDate(qt.createdAt ? new Date(qt.createdAt.seconds*1000).toISOString().slice(0,10) : '')}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editQuote('${qt.id}')">Edit</button>
+          ${qt.status !== 'converted' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="convertQuoteToInvoice('${qt.id}')">→ Invoice</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteQuote('${qt.id}')">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function calcQuoteBase(qt) {
+  const area = (qt.length || 0) * (qt.width || 0);
+  let base = area * 0.10;
+  if (qt.overgrown) base *= 2;
+  return base;
+}
+
+function calcQuoteTotal(qt) {
+  let total = calcQuoteBase(qt);
+  if (qt.permitFee)      total += 35;
+  if (qt.difficultAccess) total += 25;
+  if (qt.disposal)       total += 40;
+  return total;
+}
+
+document.querySelectorAll('[data-quote-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-quote-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    quoteFilter = btn.dataset.quoteFilter;
+    renderQuotes();
+  });
+});
+document.getElementById('quoteSearch').addEventListener('input', renderQuotes);
+
+document.getElementById('addQuoteBtn').addEventListener('click', () => {
+  clearQuoteForm();
+  document.getElementById('quoteModalTitle').textContent = 'New Quote';
+  openModal('quoteModal');
+});
+
+function clearQuoteForm() {
+  ['quoteId','quoteNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('quoteCustomer').value = '';
+  document.getElementById('quoteLength').value   = '';
+  document.getElementById('quoteWidth').value    = '';
+  document.getElementById('quoteStatus').value   = 'draft';
+  document.getElementById('quoteExpiry').value   = '';
+  ['quoteOvergrown','quotePermit','quoteDifficult','quoteDisposal'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  updateQuoteBreakdown();
+}
+
+window.editQuote = function(id) {
+  const qt = allQuotes.find(x => x.id === id);
+  if (!qt) return;
+  document.getElementById('quoteId').value       = qt.id;
+  document.getElementById('quoteCustomer').value = qt.customerId || '';
+  document.getElementById('quoteLength').value   = qt.length    || '';
+  document.getElementById('quoteWidth').value    = qt.width     || '';
+  document.getElementById('quoteStatus').value   = qt.status    || 'draft';
+  document.getElementById('quoteExpiry').value   = qt.expiry    || '';
+  document.getElementById('quoteNotes').value    = qt.notes     || '';
+  document.getElementById('quoteOvergrown').checked       = !!qt.overgrown;
+  document.getElementById('quotePermit').checked          = !!qt.permitFee;
+  document.getElementById('quoteDifficult').checked       = !!qt.difficultAccess;
+  document.getElementById('quoteDisposal').checked        = !!qt.disposal;
+  updateQuoteBreakdown();
+  document.getElementById('quoteModalTitle').textContent = 'Edit Quote';
+  openModal('quoteModal');
+};
+
+window.deleteQuote = async function(id) {
+  if (!confirm('Delete this quote?')) return;
+  await deleteDoc(doc(db, 'quotes', id));
+  toast('Quote deleted.', 'error');
+  loadQuotes();
+};
+
+window.convertQuoteToInvoice = async function(id) {
+  const qt = allQuotes.find(x => x.id === id);
+  if (!qt) return;
+  if (!confirm(`Convert this quote to an invoice for ${qt.customerName}?`)) return;
+
+  const base   = calcQuoteBase(qt);
+  const area   = (qt.length||0) * (qt.width||0);
+  const items  = [];
+
+  items.push({ desc: `Lake weed clearing — ${area.toLocaleString()} sq ft${qt.overgrown ? ' (overgrown)' : ''}`, qty: 1, price: base });
+  if (qt.permitFee)       items.push({ desc: 'Dane County permitting fee',             qty: 1, price: 35 });
+  if (qt.difficultAccess) items.push({ desc: 'Difficult access surcharge',              qty: 1, price: 25 });
+  if (qt.disposal)        items.push({ desc: 'Weed haul & disposal at compost site',    qty: 1, price: 40 });
+
+  await addDoc(collection(db, 'invoices'), {
+    customerId:    qt.customerId,
+    customerName:  qt.customerName,
+    date:          new Date().toISOString().slice(0,10),
+    dueDate:       qt.expiry || '',
+    status:        'draft',
+    notes:         qt.notes || '',
+    items,
+    invoiceNumber: Date.now(),
+    createdAt:     serverTimestamp(),
+    updatedAt:     serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, 'quotes', id), { status: 'converted', updatedAt: serverTimestamp() });
+  toast('Invoice created from quote!', 'success');
+  loadQuotes();
+  loadInvoices();
+  refreshDashboardStats();
+};
+
+document.getElementById('saveQuoteBtn').addEventListener('click', async () => {
+  const custSel  = document.getElementById('quoteCustomer');
+  const custId   = custSel.value;
+  const custName = custSel.options[custSel.selectedIndex]?.dataset.name || '';
+  const length   = parseFloat(document.getElementById('quoteLength').value);
+  const width    = parseFloat(document.getElementById('quoteWidth').value);
+  if (!custId)        { toast('Select a customer.', 'error'); return; }
+  if (!length||!width){ toast('Length and width are required.', 'error'); return; }
+
+  const qt = {
+    overgrown:      document.getElementById('quoteOvergrown').checked,
+    permitFee:      document.getElementById('quotePermit').checked,
+    difficultAccess:document.getElementById('quoteDifficult').checked,
+    disposal:       document.getElementById('quoteDisposal').checked,
+  };
+
+  const data = {
+    customerId:    custId,
+    customerName:  custName,
+    length,
+    width,
+    ...qt,
+    totalPrice:    calcQuoteTotal({ length, width, ...qt }),
+    status:        document.getElementById('quoteStatus').value,
+    expiry:        document.getElementById('quoteExpiry').value,
+    notes:         document.getElementById('quoteNotes').value.trim(),
+    updatedAt:     serverTimestamp(),
+  };
+
+  const id = document.getElementById('quoteId').value;
+  if (id) {
+    await updateDoc(doc(db, 'quotes', id), data);
+    toast('Quote updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'quotes'), data);
+    toast('Quote saved.', 'success');
+  }
+  closeModal('quoteModal');
+  loadQuotes();
+});
+
+// ── Live price calculator ─────────────────────────────────────────────────────
+
+function updateQuoteBreakdown() {
+  const length = parseFloat(document.getElementById('quoteLength').value) || 0;
+  const width  = parseFloat(document.getElementById('quoteWidth').value)  || 0;
+  const area   = length * width;
+  let base = area * 0.10;
+  const overgrown = document.getElementById('quoteOvergrown').checked;
+  const permit    = document.getElementById('quotePermit').checked;
+  const difficult = document.getElementById('quoteDifficult').checked;
+  const disposal  = document.getElementById('quoteDisposal').checked;
+  if (overgrown) base *= 2;
+  const total = base + (permit ? 35 : 0) + (difficult ? 25 : 0) + (disposal ? 40 : 0);
+
+  document.getElementById('qbArea').textContent  = area ? area.toLocaleString() + ' sq ft' : '— sq ft';
+  document.getElementById('qbBase').textContent  = '$' + (area * 0.10 * (overgrown ? 2 : 1)).toFixed(2);
+  document.getElementById('qbTotal').textContent = '$' + total.toFixed(2);
+  document.getElementById('qbRowOvergrown').style.display = overgrown ? '' : 'none';
+  document.getElementById('qbRowPermit').style.display    = permit    ? '' : 'none';
+  document.getElementById('qbRowDifficult').style.display = difficult ? '' : 'none';
+  document.getElementById('qbRowDisposal').style.display  = disposal  ? '' : 'none';
+}
+
+['quoteLength','quoteWidth'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateQuoteBreakdown));
+['quoteOvergrown','quotePermit','quoteDifficult','quoteDisposal'].forEach(id =>
+  document.getElementById(id).addEventListener('change', updateQuoteBreakdown));
 
 // ══════════════════════════════════════
 // PERMITS
