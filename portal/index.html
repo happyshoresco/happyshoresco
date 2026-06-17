@@ -687,6 +687,7 @@
                 <th>Due</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th>Last Sent</th>
                 <th></th>
               </tr>
             </thead>
@@ -1137,6 +1138,13 @@ function dueDays(str) {
 
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function fmtTimestamp(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts.seconds * 1000);
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${names[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
 function statusBadge(s) {
   const map = {
     draft:      'badge-gray',
@@ -1382,7 +1390,7 @@ function renderInvoices() {
   });
   const tbody = document.getElementById('invoiceTbody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="es-icon">🧾</div><p>No invoices${invFilter !== 'all' ? ` with status "${invFilter}"` : ''} yet.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">🧾</div><p>No invoices${invFilter !== 'all' ? ` with status "${invFilter}"` : ''} yet.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map((inv, idx) => {
@@ -1397,6 +1405,7 @@ function renderInvoices() {
         <td>${dueLabel}</td>
         <td style="font-weight:700">$${invTotal.toFixed(2)}</td>
         <td>${statusBadge(inv.status)}</td>
+        <td style="font-size:.8rem;color:var(--text-muted)">${inv.sentAt ? `<span title="Sent to ${esc(inv.sentTo||'')}">${fmtTimestamp(inv.sentAt)}</span>` : '—'}</td>
         <td>
           <div class="td-actions">
             <button class="btn btn-ghost btn-sm" onclick="editInvoice('${inv.id}')">Edit</button>
