@@ -621,7 +621,16 @@
         <div class="card-header">
           <h3>Customer List</h3>
           <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
-            <input class="search-input" id="customerSearch" placeholder="Search name, lake, email…" style="min-width:180px;" />
+            <input class="search-input" id="customerSearch" placeholder="Search name, lake, email…" style="min-width:160px;" />
+            <select class="search-input" id="customerLakeFilter" style="min-width:140px;">
+              <option value="">All Lakes</option>
+            </select>
+            <select class="search-input" id="customerSort" style="min-width:130px;">
+              <option value="az">Name A → Z</option>
+              <option value="za">Name Z → A</option>
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
             <button class="btn btn-primary" id="addCustomerBtn">+ Add Customer</button>
           </div>
         </div>
@@ -657,6 +666,14 @@
               <button class="filter-tab" data-inv-filter="sent">Sent</button>
               <button class="filter-tab" data-inv-filter="paid">Paid</button>
             </div>
+            <input class="search-input" id="invoiceSearch" placeholder="Search customer…" style="min-width:150px;" />
+            <select class="search-input" id="invoiceSort" style="min-width:150px;">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="amount-desc">Amount High → Low</option>
+              <option value="amount-asc">Amount Low → High</option>
+              <option value="due">Due Date Soonest</option>
+            </select>
             <button class="btn btn-primary" id="addInvoiceBtn">+ New Invoice</button>
           </div>
         </div>
@@ -692,7 +709,24 @@
       <div class="card">
         <div class="card-header">
           <h3>Dane County Lake Weed Removal Permits</h3>
-          <button class="btn btn-primary" id="addPermitBtn">+ New Permit Application</button>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-perm-filter="all">All</button>
+              <button class="filter-tab" data-perm-filter="pending">Pending</button>
+              <button class="filter-tab" data-perm-filter="approved">Approved</button>
+              <button class="filter-tab" data-perm-filter="denied">Denied</button>
+              <button class="filter-tab" data-perm-filter="expired">Expired</button>
+            </div>
+            <select class="search-input" id="permitLakeFilter" style="min-width:140px;">
+              <option value="">All Lakes</option>
+            </select>
+            <select class="search-input" id="permitSort" style="min-width:150px;">
+              <option value="newest">Newest Applied</option>
+              <option value="oldest">Oldest Applied</option>
+              <option value="az">Customer A → Z</option>
+            </select>
+            <button class="btn btn-primary" id="addPermitBtn">+ New Permit Application</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -727,6 +761,20 @@
               <button class="filter-tab" data-job-filter="all">All</button>
               <button class="filter-tab" data-job-filter="completed">Completed</button>
             </div>
+            <select class="search-input" id="jobServiceFilter" style="min-width:160px;">
+              <option value="">All Services</option>
+              <option>Lake Weed Removal</option>
+              <option>Aquatic Plant Management</option>
+              <option>Beach Cleaning</option>
+              <option>Shoreline Treatment</option>
+              <option>Consultation</option>
+              <option>Follow-up Visit</option>
+              <option>Other</option>
+            </select>
+            <select class="search-input" id="jobSort" style="min-width:140px;">
+              <option value="asc">Soonest First</option>
+              <option value="desc">Latest First</option>
+            </select>
             <button class="btn btn-primary" id="addJobBtn">+ Add Job</button>
           </div>
         </div>
@@ -742,7 +790,15 @@
     <div class="panel" id="panel-notes">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
         <h3 style="font-size:1.1rem;font-weight:700;">Team Notes</h3>
-        <button class="btn btn-primary" id="addNoteBtn">+ New Note</button>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+          <input class="search-input" id="noteSearch" placeholder="Search notes…" style="min-width:180px;" />
+          <select class="search-input" id="noteSort" style="min-width:140px;">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="az">Title A → Z</option>
+          </select>
+          <button class="btn btn-primary" id="addNoteBtn">+ New Note</button>
+        </div>
       </div>
       <div class="notes-grid" id="notesGrid">
         <div class="empty-state"><div class="es-icon">⏳</div><p>Loading notes…</p></div>
@@ -1153,14 +1209,50 @@ async function loadCustomers() {
   const snap = await getDocs(query(collection(db, 'customers'), orderBy('name')));
   allCustomers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   filteredCustomers = [...allCustomers];
-  renderCustomers(filteredCustomers);
+  populateLakeFilter('customerLakeFilter', allCustomers);
+  applyCustomerFilters();
   populateCustomerDropdowns();
+}
+
+function populateLakeFilter(selectId, records) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cur = sel.value;
+  const lakes = [...new Set(records.map(r => r.lake).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Lakes</option>' +
+    lakes.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+function applyCustomerFilters() {
+  const q    = (document.getElementById('customerSearch').value || '').toLowerCase();
+  const lake = document.getElementById('customerLakeFilter').value;
+  const sort = document.getElementById('customerSort').value;
+
+  let list = allCustomers.filter(c => {
+    const matchQ = !q ||
+      (c.name||'').toLowerCase().includes(q) ||
+      (c.lake||'').toLowerCase().includes(q) ||
+      (c.email||'').toLowerCase().includes(q) ||
+      (c.phone||'').includes(q);
+    const matchLake = !lake || (c.lake || '') === lake;
+    return matchQ && matchLake;
+  });
+
+  list.sort((a, b) => {
+    if (sort === 'za')     return (b.name||'').localeCompare(a.name||'');
+    if (sort === 'newest') return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+    if (sort === 'oldest') return (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0);
+    return (a.name||'').localeCompare(b.name||''); // az default
+  });
+
+  renderCustomers(list);
 }
 
 function renderCustomers(list) {
   const tbody = document.getElementById('customerTbody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="es-icon">👥</div><p>No customers yet. Click "+ Add Customer" to get started.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="es-icon">👥</div><p>No customers match your filters.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(c => `
@@ -1191,16 +1283,9 @@ function populateCustomerDropdowns() {
   });
 }
 
-document.getElementById('customerSearch').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
-  filteredCustomers = allCustomers.filter(c =>
-    (c.name||'').toLowerCase().includes(q) ||
-    (c.lake||'').toLowerCase().includes(q) ||
-    (c.email||'').toLowerCase().includes(q) ||
-    (c.phone||'').includes(q)
-  );
-  renderCustomers(filteredCustomers);
-});
+document.getElementById('customerSearch').addEventListener('input', applyCustomerFilters);
+document.getElementById('customerLakeFilter').addEventListener('change', applyCustomerFilters);
+document.getElementById('customerSort').addEventListener('change', applyCustomerFilters);
 
 document.getElementById('addCustomerBtn').addEventListener('click', () => {
   clearCustomerForm();
@@ -1277,7 +1362,19 @@ async function loadInvoices() {
 }
 
 function renderInvoices() {
-  const list = invFilter === 'all' ? allInvoices : allInvoices.filter(i => i.status === invFilter);
+  const q    = (document.getElementById('invoiceSearch')?.value || '').toLowerCase();
+  const sort = document.getElementById('invoiceSort')?.value || 'newest';
+
+  let list = invFilter === 'all' ? [...allInvoices] : allInvoices.filter(i => i.status === invFilter);
+  if (q) list = list.filter(i => (i.customerName||'').toLowerCase().includes(q));
+
+  const total = inv => (inv.items||[]).reduce((s,it) => s + (+it.qty * +it.price), 0);
+  list.sort((a, b) => {
+    if (sort === 'oldest')      return (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0);
+    if (sort === 'amount-desc') return total(b) - total(a);
+    if (sort === 'amount-asc')  return total(a) - total(b);
+    if (sort === 'due')         return (a.dueDate||'9999') < (b.dueDate||'9999') ? -1 : 1;
+    return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0); // newest
   const tbody = document.getElementById('invoiceTbody');
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="es-icon">🧾</div><p>No invoices${invFilter !== 'all' ? ` with status "${invFilter}"` : ''} yet.</p></div></td></tr>`;
@@ -1314,6 +1411,8 @@ document.querySelectorAll('[data-inv-filter]').forEach(btn => {
     renderInvoices();
   });
 });
+document.getElementById('invoiceSearch').addEventListener('input', renderInvoices);
+document.getElementById('invoiceSort').addEventListener('change', renderInvoices);
 
 function buildLineItemRow(item = { desc:'', qty:1, price:0 }) {
   const row = document.createElement('div');
@@ -1441,15 +1540,19 @@ document.getElementById('saveInvoiceBtn').addEventListener('click', async () => 
 // ══════════════════════════════════════
 
 let allPermits = [];
+let permitStatusFilter = 'all';
 
 async function loadPermits() {
   const snap = await getDocs(query(collection(db, 'permits'), orderBy('createdAt', 'desc')));
   allPermits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  populateLakeFilter('permitLakeFilter', allPermits);
   renderPermits();
 }
 
 function renderPermits() {
-  const tbody = document.getElementById('permitTbody');
+  const tbody    = document.getElementById('permitTbody');
+  const lake     = document.getElementById('permitLakeFilter')?.value || '';
+  const sort     = document.getElementById('permitSort')?.value || 'newest';
 
   const counts = { total: allPermits.length, pending: 0, approved: 0, denied: 0 };
   allPermits.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; });
@@ -1458,12 +1561,24 @@ function renderPermits() {
   document.getElementById('pStatApproved').textContent = counts.approved;
   document.getElementById('pStatDenied').textContent   = counts.denied;
 
-  if (!allPermits.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📋</div><p>No permit applications yet. Click "+ New Permit Application" to start tracking.</p></div></td></tr>`;
+  let list = allPermits.filter(p => {
+    const matchStatus = permitStatusFilter === 'all' || p.status === permitStatusFilter;
+    const matchLake   = !lake || (p.lake||'') === lake;
+    return matchStatus && matchLake;
+  });
+
+  list.sort((a, b) => {
+    if (sort === 'oldest') return (a.appliedDate||'') < (b.appliedDate||'') ? -1 : 1;
+    if (sort === 'az')     return (a.customerName||'').localeCompare(b.customerName||'');
+    return (b.appliedDate||'') < (a.appliedDate||'') ? -1 : 1; // newest
+  });
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📋</div><p>No permits match your filters.</p></div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = allPermits.map(p => `
+  tbody.innerHTML = list.map(p => `
     <tr>
       <td><strong>${esc(p.customerName || '—')}</strong></td>
       <td>${esc(p.lake || '—')}</td>
@@ -1481,6 +1596,17 @@ function renderPermits() {
     </tr>
   `).join('');
 }
+
+document.querySelectorAll('[data-perm-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-perm-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    permitStatusFilter = btn.dataset.permFilter;
+    renderPermits();
+  });
+});
+document.getElementById('permitLakeFilter').addEventListener('change', renderPermits);
+document.getElementById('permitSort').addEventListener('change', renderPermits);
 
 document.getElementById('addPermitBtn').addEventListener('click', () => {
   clearPermitForm();
@@ -1565,7 +1691,10 @@ async function loadJobs() {
 }
 
 function renderJobs() {
-  const todayStr = today();
+  const todayStr   = today();
+  const service    = document.getElementById('jobServiceFilter')?.value || '';
+  const sort       = document.getElementById('jobSort')?.value || 'asc';
+
   let list;
   if (jobFilter === 'upcoming') {
     list = allJobs.filter(j => j.scheduledDate >= todayStr && j.status !== 'cancelled' && j.status !== 'completed');
@@ -1574,6 +1703,10 @@ function renderJobs() {
   } else {
     list = [...allJobs];
   }
+
+  if (service) list = list.filter(j => j.serviceType === service);
+  if (sort === 'desc') list.sort((a,b) => (b.scheduledDate||'') < (a.scheduledDate||'') ? -1 : 1);
+  else list.sort((a,b) => (a.scheduledDate||'') < (b.scheduledDate||'') ? -1 : 1);
 
   const container = document.getElementById('jobList');
   if (!list.length) {
@@ -1616,6 +1749,8 @@ document.querySelectorAll('[data-job-filter]').forEach(btn => {
     renderJobs();
   });
 });
+document.getElementById('jobServiceFilter').addEventListener('change', renderJobs);
+document.getElementById('jobSort').addEventListener('change', renderJobs);
 
 document.getElementById('addJobBtn').addEventListener('click', () => {
   clearJobForm();
@@ -1702,11 +1837,24 @@ async function loadNotes() {
 
 function renderNotes() {
   const grid = document.getElementById('notesGrid');
-  if (!allNotes.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📝</div><p>No notes yet. Add one to share with the team.</p></div>`;
+  const q    = (document.getElementById('noteSearch')?.value || '').toLowerCase();
+  const sort = document.getElementById('noteSort')?.value || 'newest';
+
+  let list = allNotes.filter(n =>
+    !q || (n.title||'').toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q)
+  );
+
+  list.sort((a, b) => {
+    if (sort === 'oldest') return (a.updatedAt?.seconds||0) - (b.updatedAt?.seconds||0);
+    if (sort === 'az')     return (a.title||'').localeCompare(b.title||'');
+    return (b.updatedAt?.seconds||0) - (a.updatedAt?.seconds||0); // newest
+  });
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📝</div><p>${q ? 'No notes match your search.' : 'No notes yet. Add one to share with the team.'}</p></div>`;
     return;
   }
-  grid.innerHTML = allNotes.map(n => `
+  grid.innerHTML = list.map(n => `
     <div class="note-card">
       <h4>${esc(n.title)}</h4>
       <p>${esc(n.body || '')}</p>
@@ -1720,6 +1868,9 @@ function renderNotes() {
     </div>
   `).join('');
 }
+
+document.getElementById('noteSearch').addEventListener('input', renderNotes);
+document.getElementById('noteSort').addEventListener('change', renderNotes);
 
 document.getElementById('addNoteBtn').addEventListener('click', () => {
   document.getElementById('noteId').value    = '';
