@@ -1392,7 +1392,7 @@ import {
   collection, doc,
   addDoc, setDoc, updateDoc, deleteDoc,
   getDocs, query, orderBy, where, serverTimestamp,
-  onSnapshot
+  onSnapshot, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {
   getFunctions, httpsCallable
@@ -1878,7 +1878,13 @@ document.getElementById('saveInvoiceBtn').addEventListener('click', async () => 
     toast('Invoice updated.', 'success');
   } else {
     data.createdAt = serverTimestamp();
-    data.invoiceNumber = Date.now();
+    const counterRef = doc(db, 'meta', 'invoiceCounter');
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(counterRef);
+      const next = snap.exists() ? (snap.data().value + 1) : 100;
+      tx.set(counterRef, { value: next });
+      data.invoiceNumber = next;
+    });
     await addDoc(collection(db, 'invoices'), data);
     toast('Invoice created.', 'success');
   }
@@ -2022,6 +2028,13 @@ window.convertQuoteToInvoice = async function(id) {
   if (qt.difficultAccess) items.push({ desc: 'Difficult access surcharge',              qty: 1, price: 25 });
   if (qt.disposal)        items.push({ desc: 'Weed haul & disposal at compost site',    qty: 1, price: 40 });
 
+  const counterRef = doc(db, 'meta', 'invoiceCounter');
+  let nextNum = 100;
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(counterRef);
+    nextNum = snap.exists() ? (snap.data().value + 1) : 100;
+    tx.set(counterRef, { value: nextNum });
+  });
   await addDoc(collection(db, 'invoices'), {
     customerId:    qt.customerId,
     customerName:  qt.customerName,
@@ -2030,7 +2043,7 @@ window.convertQuoteToInvoice = async function(id) {
     status:        'draft',
     notes:         qt.notes || '',
     items,
-    invoiceNumber: Date.now(),
+    invoiceNumber: nextNum,
     createdAt:     serverTimestamp(),
     updatedAt:     serverTimestamp(),
   });

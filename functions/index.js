@@ -148,48 +148,23 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   const pdfBuffer = await generateInvoicePDF(inv);
   const invNum    = String(inv.invoiceNumber || '').padStart(4, '0');
 
-  // Build totals for email body
   const total = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
 
   const htmlBody = `
-  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f7fafa;padding:0;">
-    <div style="background:#0d7370;padding:28px 32px;">
-      <h1 style="color:#fff;margin:0;font-size:22px;">Happy Shores Co</h1>
-      <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${COMPANY_PHONE} · ${COMPANY_WEBSITE}</p>
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+    <div style="background:#0d7370;padding:24px 32px;">
+      <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
+      <p style="color:rgba(255,255,255,0.7);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · ${COMPANY_WEBSITE}</p>
     </div>
-    <div style="background:#fff;padding:32px;">
-      <p style="color:#4a7070;font-size:13px;margin:0 0 24px;">Hi ${inv.customerName || 'there'},</p>
-      <p style="color:#0c2e2e;font-size:15px;margin:0 0 24px;">
-        Please find your invoice attached as a PDF. Here's a summary:
-      </p>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">
-        <tr style="background:#eef4f3;">
-          <th style="text-align:left;padding:10px 12px;color:#4a7070;font-size:11px;text-transform:uppercase;">Description</th>
-          <th style="text-align:right;padding:10px 12px;color:#4a7070;font-size:11px;text-transform:uppercase;">Qty</th>
-          <th style="text-align:right;padding:10px 12px;color:#4a7070;font-size:11px;text-transform:uppercase;">Amount</th>
-        </tr>
-        ${(inv.items || []).map((it, i) => `
-        <tr style="background:${i % 2 === 1 ? '#f7fafa' : '#fff'}">
-          <td style="padding:10px 12px;color:#0c2e2e;">${it.desc || ''}</td>
-          <td style="padding:10px 12px;text-align:right;color:#0c2e2e;">${it.qty}</td>
-          <td style="padding:10px 12px;text-align:right;color:#0c2e2e;">$${(+it.qty * +it.price).toFixed(2)}</td>
-        </tr>`).join('')}
-        <tr style="background:#0d7370;">
-          <td colspan="2" style="padding:12px;color:#fff;font-weight:bold;">Total Due</td>
-          <td style="padding:12px;text-align:right;color:#fff;font-weight:bold;font-size:16px;">$${total.toFixed(2)}</td>
-        </tr>
-      </table>
-      ${inv.dueDate ? `<p style="color:#0c2e2e;font-size:13px;"><strong>Due date:</strong> ${fmtDate(inv.dueDate)}</p>` : ''}
-      ${inv.notes  ? `<p style="color:#4a7070;font-size:13px;border-left:3px solid #0d7370;padding-left:12px;margin:16px 0;">${inv.notes}</p>` : ''}
-      <p style="color:#4a7070;font-size:13px;margin:24px 0 0;">
-        Questions? Call us at <strong>${COMPANY_PHONE}</strong> or reply to this email.
-      </p>
-      <p style="color:#4a7070;font-size:13px;">Thank you for choosing Happy Shores Co!</p>
+    <div style="padding:32px;background:#fff;">
+      <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
+      <p style="margin:0 0 16px;">Please find your invoice #${invNum} attached to this email${inv.dueDate ? `, due on ${fmtDate(inv.dueDate)}` : ''}. The total amount due is <strong>$${total.toFixed(2)}</strong>.</p>
+      ${inv.notes ? `<p style="margin:0 0 16px;">${inv.notes}</p>` : ''}
+      <p style="margin:0 0 8px;">If you have any questions, please call us at ${COMPANY_PHONE} or reply to this email.</p>
+      <p style="margin:0;">Thank you for choosing Happy Shores Co!</p>
     </div>
-    <div style="background:#081e1e;padding:16px 32px;text-align:center;">
-      <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">
-        Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}
-      </p>
+    <div style="background:#081e1e;padding:14px 32px;text-align:center;">
+      <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
     </div>
   </div>`;
 
