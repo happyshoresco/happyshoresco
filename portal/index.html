@@ -1936,6 +1936,7 @@ function renderQuotes() {
       <td>
         <div class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="editQuote('${qt.id}')">Edit</button>
+          <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="downloadQuotePDF('${qt.id}')">⬇ PDF</button>
           ${qt.status !== 'converted' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="convertQuoteToInvoice('${qt.id}')">→ Invoice</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="deleteQuote('${qt.id}')">Del</button>
         </div>
@@ -2012,6 +2013,112 @@ window.deleteQuote = async function(id) {
   await deleteDoc(doc(db, 'quotes', id));
   toast('Quote deleted.', 'error');
   loadQuotes();
+};
+
+window.downloadQuotePDF = function(id) {
+  const qt = allQuotes.find(x => x.id === id);
+  if (!qt) return;
+
+  const area      = (qt.length || 0) * (qt.width || 0);
+  const baseRaw   = area * 0.08;
+  const basePrice = qt.overgrown ? baseRaw * 2 : baseRaw;
+  const total     = calcQuoteTotal(qt);
+  const quoteNum  = String(allQuotes.indexOf(qt) + 1).padStart(3, '0');
+
+  const rows = [
+    { desc: `Lake weed clearing — ${area.toLocaleString()} sq ft @ $0.08/sq ft${qt.overgrown ? ' (overgrown ×2)' : ''}`, amount: basePrice },
+    ...(qt.permitFee        ? [{ desc: 'Dane County permitting fee',          amount: 35 }] : []),
+    ...(qt.difficultAccess  ? [{ desc: 'Difficult access surcharge',           amount: 25 }] : []),
+    ...(qt.disposal         ? [{ desc: 'Weed haul & disposal (compost site)',  amount: 40 }] : []),
+  ];
+
+  const rowsHTML = rows.map((r, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f5fafa'}">
+      <td style="padding:10px 14px;color:#0c2e2e;">${r.desc}</td>
+      <td style="padding:10px 14px;text-align:right;color:#0c2e2e;font-weight:600;">$${r.amount.toFixed(2)}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Quote #${quoteNum} — Happy Shores Co</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #0c2e2e; background: #fff; }
+    .logo-bar { background: #f5f0e8; text-align: center; padding: 18px; }
+    .logo-bar img { width: 100px; }
+    .header { background: #0d7370; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { color: #fff; font-size: 22px; margin-bottom: 4px; }
+    .header p  { color: rgba(255,255,255,0.8); font-size: 12px; }
+    .header .label { color: #e8a500; font-size: 28px; font-weight: 800; letter-spacing: 2px; }
+    .meta { display: flex; justify-content: space-between; padding: 28px 40px 0; }
+    .meta-block h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #4a7070; margin-bottom: 6px; }
+    .meta-block p  { font-size: 13px; color: #0c2e2e; line-height: 1.6; }
+    .section { padding: 28px 40px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: #eef4f3; }
+    thead th { padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4a7070; }
+    thead th:last-child { text-align: right; }
+    .total-row td { padding: 14px; background: #0d7370; color: #fff; font-weight: 800; font-size: 15px; }
+    .total-row td:last-child { text-align: right; }
+    .notes { padding: 20px 40px 0; font-size: 13px; color: #4a7070; border-left: 3px solid #0d7370; margin: 20px 40px 0; padding-left: 14px; }
+    .footer { margin-top: 48px; background: #081e1e; padding: 14px 40px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.4); }
+    @media print {
+      @page { margin: 0; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-bar"><img src="https://happyshoresco.com/logo.png" alt="Happy Shores Co" /></div>
+  <div class="header">
+    <div>
+      <h1>Happy Shores Co</h1>
+      <p>(608) 345-2345 · happyshoresco.com</p>
+    </div>
+    <div class="label">QUOTE</div>
+  </div>
+
+  <div class="meta">
+    <div class="meta-block">
+      <h3>Quote #</h3>
+      <p>#${quoteNum}</p>
+      <br>
+      <h3>Date</h3>
+      <p>${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}</p>
+      ${qt.expiry ? `<br><h3>Valid Until</h3><p>${new Date(qt.expiry + 'T12:00:00').toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}</p>` : ''}
+    </div>
+    <div class="meta-block" style="text-align:right;">
+      <h3>Prepared For</h3>
+      <p style="font-size:15px;font-weight:700;">${esc(qt.customerName || '—')}</p>
+      <br>
+      <h3>Area</h3>
+      <p>${area ? area.toLocaleString() + ' sq ft' : '—'}<br>${qt.length || '—'} ft × ${qt.width || '—'} ft</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <table>
+      <thead><tr><th>Description</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>${rowsHTML}</tbody>
+      <tfoot>
+        <tr class="total-row"><td>Total Quote</td><td>$${total.toFixed(2)}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  ${qt.notes ? `<div class="notes">${esc(qt.notes)}</div>` : ''}
+
+  <div class="footer">Happy Shores Co · Madison & Dane County · (608) 345-2345 · happyshoresco.com</div>
+
+  <script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 };
 
 window.convertQuoteToInvoice = async function(id) {
