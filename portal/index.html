@@ -1946,7 +1946,7 @@ function renderQuotes() {
 
 function calcQuoteBase(qt) {
   const area = (qt.length || 0) * (qt.width || 0);
-  let base = area * 0.10;
+  let base = area * 0.08;
   if (qt.overgrown) base *= 2;
   return base;
 }
@@ -2103,7 +2103,7 @@ function updateQuoteBreakdown() {
   const length = parseFloat(document.getElementById('quoteLength').value) || 0;
   const width  = parseFloat(document.getElementById('quoteWidth').value)  || 0;
   const area   = length * width;
-  let base = area * 0.10;
+  let base = area * 0.08;
   const overgrown = document.getElementById('quoteOvergrown').checked;
   const permit    = document.getElementById('quotePermit').checked;
   const difficult = document.getElementById('quoteDifficult').checked;
@@ -2112,7 +2112,7 @@ function updateQuoteBreakdown() {
   const total = base + (permit ? 35 : 0) + (difficult ? 25 : 0) + (disposal ? 40 : 0);
 
   document.getElementById('qbArea').textContent  = area ? area.toLocaleString() + ' sq ft' : '— sq ft';
-  document.getElementById('qbBase').textContent  = '$' + (area * 0.10 * (overgrown ? 2 : 1)).toFixed(2);
+  document.getElementById('qbBase').textContent  = '$' + (area * 0.08 * (overgrown ? 2 : 1)).toFixed(2);
   document.getElementById('qbTotal').textContent = '$' + total.toFixed(2);
   document.getElementById('qbRowOvergrown').style.display = overgrown ? '' : 'none';
   document.getElementById('qbRowPermit').style.display    = permit    ? '' : 'none';
