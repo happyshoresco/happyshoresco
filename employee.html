@@ -313,7 +313,10 @@
 
       setLoading(true);
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject({ code: 'auth/timeout' }), 10000)
+        );
+        await Promise.race([signInWithEmailAndPassword(auth, email, password), timeout]);
         // onAuthStateChanged will handle the redirect
       } catch (err) {
         setLoading(false);
@@ -322,8 +325,9 @@
           'auth/user-not-found':        'No account found with that email.',
           'auth/wrong-password':        'Incorrect password.',
           'auth/too-many-requests':     'Too many failed attempts. Try again later.',
-          'auth/network-request-failed':'Network error. Check your connection.',
-        }[err.code] ?? 'Sign-in failed. Please try again.';
+          'auth/network-request-failed':'Network error — check your connection.',
+          'auth/timeout':               'Request timed out — check your connection and try again.',
+        }[err.code] ?? `Sign-in failed (${err.code || 'unknown'}). Try again.`;
         showAuthError(msg);
       }
     });
