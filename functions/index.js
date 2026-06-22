@@ -1,8 +1,10 @@
-const functions = require('firebase-functions');
-const admin     = require('firebase-admin');
-const sgMail    = require('@sendgrid/mail');
-const PDFDoc    = require('pdfkit');
-const path      = require('path');
+const functions   = require('firebase-functions');
+const admin       = require('firebase-admin');
+const sgMail      = require('@sendgrid/mail');
+const PDFDoc      = require('pdfkit');
+const path        = require('path');
+const { ImapFlow }      = require('imapflow');
+const { simpleParser } = require('mailparser');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -344,3 +346,111 @@ exports.sendAssignmentEmail = functions.https.onCall(async (data, context) => {
 
   return { success: true, notified: results };
 });
+
+// ── Scheduled function: checkPermitEmails ─────────────────────────────────────
+// Runs every 2 hours. Connects to IMAP inbox, scans for Dane County replies,
+// auto-updates permit status in Firestore.
+// Requires env vars: IMAP_HOST, IMAP_USER, IMAP_PASS
+exports.checkPermitEmails = functions.pubsub
+  .schedule('every 2 hours')
+  .onRun(async () => {
+    const IMAP_HOST = process.env.IMAP_HOST;
+    const IMAP_USER = process.env.IMAP_USER;
+    const IMAP_PASS = process.env.IMAP_PASS;
+
+    if (!IMAP_HOST || !IMAP_USER || !IMAP_PASS) {
+      console.log('IMAP credentials not configured — skipping permit email check.');
+      return null;
+    }
+
+    const client = new ImapFlow({
+      host: IMAP_HOST,
+      port: 993,
+      secure: true,
+      auth: { user: IMAP_USER, pass: IMAP_PASS },
+      logger: false,
+    });
+
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+
+    let emailsProcessed = 0;
+
+    try {
+      // Search for unread mail from Dane County
+      const uids = await client.search({ unseen: true, from: 'countyofdane.com' });
+
+      for await (const msg of client.fetch(uids, { source: true, uid: true })) {
+        const parsed  = await simpleParser(msg.source);
+        const subject = (parsed.subject || '').toLowerCase();
+        const body    = (parsed.text    || '').toLowerCase();
+        const full    = `${subject} ${body}`;
+
+        // Detect status
+        let newStatus = null;
+        if (/\b(approved|issued|granted|permit.*issued)\b/.test(full)) newStatus = 'approved';
+        else if (/\b(denied|rejected|not approved|cannot be approved|disapproved)\b/.test(full)) newStatus = 'denied';
+
+        if (!newStatus) {
+          // Mark read so we don't reprocess, but don't update status
+          await client.messageFlagsAdd({ uid: msg.uid }, ['\\Seen']);
+          emailsProcessed++;
+          continue;
+        }
+
+        // Try to extract a permit number (e.g. DC-2025-001, DCLWR-2025-123, etc.)
+        const numMatch = full.match(/\b([a-z]{2,6}[-\s]?\d{4}[-\s]?\d{2,6})\b/i);
+        const extractedNum = numMatch ? numMatch[1].toUpperCase().replace(/\s/g, '-') : null;
+
+        // Pull all permits from Firestore and find the best match
+        const permSnap = await db.collection('permits').get();
+        const permits  = permSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        let match = null;
+
+        // 1. Match by permit number if we extracted one
+        if (extractedNum) {
+          match = permits.find(p =>
+            p.permitNumber && p.permitNumber.toUpperCase().replace(/\s/g, '-') === extractedNum
+          );
+        }
+
+        // 2. Fallback: match by customer name appearing in the email body
+        if (!match) {
+          match = permits.find(p =>
+            p.customerName && full.includes(p.customerName.toLowerCase())
+          );
+        }
+
+        // 3. Fallback: match by lake name
+        if (!match) {
+          match = permits.find(p =>
+            p.lake && full.includes(p.lake.toLowerCase())
+          );
+        }
+
+        if (match && match.status !== newStatus) {
+          const update = { status: newStatus, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+          if (extractedNum && !match.permitNumber) update.permitNumber = extractedNum;
+          if (newStatus === 'approved') update.autoApprovedAt = admin.firestore.FieldValue.serverTimestamp();
+          await db.collection('permits').doc(match.id).update(update);
+          console.log(`Permit ${match.id} (${match.customerName}) auto-updated to ${newStatus}`);
+        }
+
+        await client.messageFlagsAdd({ uid: msg.uid }, ['\\Seen']);
+        emailsProcessed++;
+      }
+    } finally {
+      lock.release();
+      await client.logout();
+    }
+
+    // Record check timestamp in Firestore for the portal indicator
+    await db.collection('meta').doc('permitEmailCheck').set({
+      lastChecked:     admin.firestore.FieldValue.serverTimestamp(),
+      emailsProcessed: admin.firestore.FieldValue.increment(emailsProcessed),
+    }, { merge: true });
+
+    console.log(`Permit email check complete. Processed: ${emailsProcessed}`);
+    return null;
+  });

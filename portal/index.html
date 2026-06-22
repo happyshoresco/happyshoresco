@@ -838,6 +838,7 @@
         <div class="permit-stat"><div class="permit-stat__num" style="color:#92400e" id="pStatPending">—</div><div class="permit-stat__label">Pending</div></div>
         <div class="permit-stat"><div class="permit-stat__num" style="color:#065f46" id="pStatApproved">—</div><div class="permit-stat__label">Approved</div></div>
         <div class="permit-stat"><div class="permit-stat__num" style="color:#991b1b" id="pStatDenied">—</div><div class="permit-stat__label">Denied</div></div>
+        <div class="permit-stat" style="margin-left:auto;text-align:right;font-size:.75rem;color:var(--text-muted);line-height:1.4;" id="permitEmailCheckInfo"></div>
       </div>
       <div class="card">
         <div class="card-header">
@@ -871,12 +872,13 @@
                 <th>Applied</th>
                 <th>Permit #</th>
                 <th>Status</th>
+                <th>Method / Area</th>
                 <th>Notes</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="permitTbody">
-              <tr><td colspan="8"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading permits…</p></div></td></tr>
+              <tr><td colspan="9"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading permits…</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1322,8 +1324,36 @@
           <label>Expiration Date</label>
           <input type="date" id="permExpires" />
         </div>
+        <div class="form-group">
+          <label>Removal Method</label>
+          <select id="permMethod">
+            <option value="mechanical">Mechanical Removal</option>
+            <option value="hand">Hand Pulling</option>
+            <option value="both">Both Methods</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Treatment Area (sq ft)</label>
+          <input type="number" id="permArea" placeholder="e.g. 5000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Planned Start Date</label>
+          <input type="date" id="permPlannedStart" />
+        </div>
+        <div class="form-group">
+          <label>Planned End Date</label>
+          <input type="date" id="permPlannedEnd" />
+        </div>
         <div class="form-group" style="grid-column:1/-1">
-          <label>Notes</label>
+          <label>GPS / Location Description <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <input type="text" id="permGPS" placeholder="43.0731° N, 89.4012° W or 'North shore near boat ramp'" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Reply-To Email for Dane County <span style="font-weight:400;color:var(--text-muted)">(where they'll send approval/denial)</span></label>
+          <input type="email" id="permReplyEmail" placeholder="permits@happyshoresco.com" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes / Scope of Work</label>
           <textarea id="permNotes" placeholder="Scope of work, conditions, contacts…"></textarea>
         </div>
       </div>
@@ -2506,27 +2536,32 @@ function renderPermits() {
   });
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📋</div><p>No permits match your filters.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="es-icon">📋</div><p>No permits match your filters.</p></div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = list.map(p => `
-    <tr>
+  const methodLabels = { mechanical: 'Mechanical', hand: 'Hand', both: 'Both' };
+  tbody.innerHTML = list.map(p => {
+    const methodStr = p.workMethod ? methodLabels[p.workMethod] || p.workMethod : '—';
+    const areaStr   = p.treatmentArea ? Number(p.treatmentArea).toLocaleString() + ' sq ft' : '';
+    return `<tr>
       <td><strong>${esc(p.customerName || '—')}</strong></td>
       <td>${esc(p.lake || '—')}</td>
       <td style="font-size:.8125rem;color:var(--text-muted)">${esc(p.address || '—')}</td>
       <td>${fmtDate(p.appliedDate)}</td>
       <td style="font-weight:600;color:var(--teal)">${esc(p.permitNumber || '—')}</td>
       <td>${statusBadge(p.status)}</td>
-      <td style="max-width:160px;font-size:.8125rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.notes || '—')}</td>
+      <td style="font-size:.8125rem;color:var(--text-muted)">${methodStr}${areaStr ? '<br>' + areaStr : ''}</td>
+      <td style="max-width:140px;font-size:.8125rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.notes || '—')}</td>
       <td>
         <div class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="editPermit('${p.id}')">Edit</button>
+          <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="downloadPermitPDF('${p.id}')">⬇ Application</button>
           <button class="btn btn-danger btn-sm" onclick="deletePermit('${p.id}')">Del</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 document.querySelectorAll('[data-perm-filter]').forEach(btn => {
@@ -2547,11 +2582,14 @@ document.getElementById('addPermitBtn').addEventListener('click', () => {
 });
 
 function clearPermitForm() {
-  ['permId','permCustomer','permLake','permAddress','permNumber','permNotes','permExpires'].forEach(id => {
+  ['permId','permCustomer','permLake','permAddress','permNumber','permNotes','permExpires',
+   'permArea','permGPS','permReplyEmail','permPlannedStart','permPlannedEnd'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  document.getElementById('permApplied').value = today();
-  document.getElementById('permStatus').value = 'pending';
+  document.getElementById('permApplied').value  = today();
+  document.getElementById('permStatus').value   = 'pending';
+  document.getElementById('permMethod').value   = 'mechanical';
+  document.getElementById('permReplyEmail').value = 'permits@happyshoresco.com';
 }
 
 window.editPermit = function(id) {
@@ -2564,8 +2602,14 @@ window.editPermit = function(id) {
   document.getElementById('permApplied').value  = p.appliedDate  || '';
   document.getElementById('permNumber').value   = p.permitNumber || '';
   document.getElementById('permStatus').value   = p.status       || 'pending';
-  document.getElementById('permExpires').value  = p.expiresDate  || '';
-  document.getElementById('permNotes').value    = p.notes        || '';
+  document.getElementById('permExpires').value      = p.expiresDate   || '';
+  document.getElementById('permMethod').value       = p.workMethod    || 'mechanical';
+  document.getElementById('permArea').value         = p.treatmentArea || '';
+  document.getElementById('permPlannedStart').value = p.plannedStart  || '';
+  document.getElementById('permPlannedEnd').value   = p.plannedEnd    || '';
+  document.getElementById('permGPS').value          = p.gpsCoords     || '';
+  document.getElementById('permReplyEmail').value   = p.replyEmail    || 'permits@happyshoresco.com';
+  document.getElementById('permNotes').value        = p.notes         || '';
   document.getElementById('permitModalTitle').textContent = 'Edit Permit';
   openModal('permitModal');
 };
@@ -2585,14 +2629,20 @@ document.getElementById('savePermitBtn').addEventListener('click', async () => {
 
   const id = document.getElementById('permId').value;
   const data = {
-    customerName: customer,
+    customerName:  customer,
     lake,
-    address:      document.getElementById('permAddress').value.trim(),
-    appliedDate:  document.getElementById('permApplied').value,
-    permitNumber: document.getElementById('permNumber').value.trim(),
-    status:       document.getElementById('permStatus').value,
-    expiresDate:  document.getElementById('permExpires').value,
-    notes:        document.getElementById('permNotes').value.trim(),
+    address:       document.getElementById('permAddress').value.trim(),
+    appliedDate:   document.getElementById('permApplied').value,
+    permitNumber:  document.getElementById('permNumber').value.trim(),
+    status:        document.getElementById('permStatus').value,
+    expiresDate:   document.getElementById('permExpires').value,
+    workMethod:    document.getElementById('permMethod').value,
+    treatmentArea: parseFloat(document.getElementById('permArea').value) || null,
+    plannedStart:  document.getElementById('permPlannedStart').value,
+    plannedEnd:    document.getElementById('permPlannedEnd').value,
+    gpsCoords:     document.getElementById('permGPS').value.trim(),
+    replyEmail:    document.getElementById('permReplyEmail').value.trim(),
+    notes:         document.getElementById('permNotes').value.trim(),
     updatedAt: serverTimestamp(),
   };
 
@@ -2608,6 +2658,124 @@ document.getElementById('savePermitBtn').addEventListener('click', async () => {
   loadPermits();
   refreshDashboardStats();
 });
+
+// Load last email-check timestamp from Firestore meta
+async function loadPermitEmailCheckInfo() {
+  try {
+    const snap = await getDocs(query(collection(db, 'meta'), orderBy('__name__')));
+    const meta = snap.docs.find(d => d.id === 'permitEmailCheck');
+    const el   = document.getElementById('permitEmailCheckInfo');
+    if (!el) return;
+    if (meta && meta.data().lastChecked) {
+      const ts  = new Date(meta.data().lastChecked.seconds * 1000);
+      const cnt = meta.data().emailsProcessed || 0;
+      el.innerHTML = `Email auto-check<br>${ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}<br>${cnt} email${cnt !== 1 ? 's' : ''} processed`;
+    } else {
+      el.textContent = 'Email check: not yet run';
+    }
+  } catch(e) { /* IMAP not configured yet */ }
+}
+loadPermitEmailCheckInfo();
+
+window.downloadPermitPDF = function(id) {
+  const p = allPermits.find(x => x.id === id);
+  if (!p) return;
+
+  const methodLabels = { mechanical: 'Mechanical removal equipment', hand: 'Hand pulling only', both: 'Mechanical removal and hand pulling' };
+  const methodDesc   = methodLabels[p.workMethod] || 'Mechanical removal';
+  const dateStr      = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const fmtD = s => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '—';
+
+  const html = `<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <title>Permit Application — ${esc(p.customerName)} — ${esc(p.lake)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;color:#0c2e2e;font-size:13px;line-height:1.6}
+    .logo-bar{background:#f5f0e8;text-align:center;padding:14px}
+    .logo-bar img{width:80px}
+    .header{background:#0d7370;padding:16px 40px;display:flex;justify-content:space-between;align-items:center}
+    .header h1{color:#fff;font-size:18px}.header p{color:rgba(255,255,255,.8);font-size:11px}
+    .header .label{color:#e8a500;font-size:20px;font-weight:800;letter-spacing:1px}
+    .to-block{background:#f0f7f7;border-left:4px solid #0d7370;margin:24px 40px 0;padding:12px 16px;font-size:12px}
+    .to-block strong{display:block;margin-bottom:2px;font-size:13px}
+    h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#4a7070;margin:24px 40px 6px}
+    .section{margin:0 40px 16px;border:1px solid #dde9e9;border-radius:6px;overflow:hidden}
+    .row{display:flex;border-bottom:1px solid #eef4f3}
+    .row:last-child{border-bottom:none}
+    .row .lbl{background:#eef4f3;padding:8px 14px;font-weight:700;width:42%;flex-shrink:0;color:#4a7070}
+    .row .val{padding:8px 14px;color:#0c2e2e}
+    .sig-block{margin:20px 40px;display:flex;gap:40px}
+    .sig-line{flex:1;border-top:1px solid #0c2e2e;padding-top:6px;font-size:11px;color:#4a7070}
+    .footer{margin-top:32px;background:#081e1e;padding:12px 40px;text-align:center;font-size:10px;color:rgba(255,255,255,.35)}
+    .submit-note{margin:16px 40px;padding:12px;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;font-size:12px;color:#92400e}
+    @media print{@page{margin:0;size:letter}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head><body>
+  <div class="logo-bar"><img src="https://happyshoresco.com/logo.png" alt="Happy Shores Co"/></div>
+  <div class="header">
+    <div><h1>Happy Shores Co</h1><p>(608) 345-2345 · happyshoresco.com</p></div>
+    <div class="label">PERMIT APPLICATION</div>
+  </div>
+
+  <div class="to-block">
+    <strong>To: Dane County Land &amp; Water Resources Department</strong>
+    Attn: Aquatic Plant Management · dclwr@countyofdane.com · (608) 224-3730
+  </div>
+
+  <h2>Property &amp; Applicant Information</h2>
+  <div class="section">
+    <div class="row"><div class="lbl">Property Owner</div><div class="val">${esc(p.customerName||'—')}</div></div>
+    <div class="row"><div class="lbl">Property Address</div><div class="val">${esc(p.address||'—')}</div></div>
+    <div class="row"><div class="lbl">Lake / Waterbody</div><div class="val">${esc(p.lake||'—')}</div></div>
+    ${p.gpsCoords ? `<div class="row"><div class="lbl">GPS / Location</div><div class="val">${esc(p.gpsCoords)}</div></div>` : ''}
+    <div class="row"><div class="lbl">Reply-To Email</div><div class="val">${esc(p.replyEmail||'—')}</div></div>
+  </div>
+
+  <h2>Scope of Work</h2>
+  <div class="section">
+    <div class="row"><div class="lbl">Removal Method</div><div class="val">${methodDesc}</div></div>
+    ${p.treatmentArea ? `<div class="row"><div class="lbl">Treatment Area</div><div class="val">${Number(p.treatmentArea).toLocaleString()} sq ft</div></div>` : ''}
+    <div class="row"><div class="lbl">Planned Start Date</div><div class="val">${fmtD(p.plannedStart)}</div></div>
+    <div class="row"><div class="lbl">Planned End Date</div><div class="val">${fmtD(p.plannedEnd)}</div></div>
+    ${p.notes ? `<div class="row"><div class="lbl">Additional Notes</div><div class="val" style="white-space:pre-line">${esc(p.notes)}</div></div>` : ''}
+  </div>
+
+  <h2>Contractor Information</h2>
+  <div class="section">
+    <div class="row"><div class="lbl">Company</div><div class="val">Happy Shores Co</div></div>
+    <div class="row"><div class="lbl">Phone</div><div class="val">(608) 345-2345</div></div>
+    <div class="row"><div class="lbl">Email</div><div class="val">hello@happyshoresco.com</div></div>
+    <div class="row"><div class="lbl">Website</div><div class="val">happyshoresco.com</div></div>
+    <div class="row"><div class="lbl">Date Prepared</div><div class="val">${dateStr}</div></div>
+  </div>
+
+  <div class="submit-note">
+    <strong>Submission instructions:</strong> Email this document to <strong>dclwr@countyofdane.com</strong> with subject line
+    "Aquatic Plant Management Permit Application — ${esc(p.lake||'[lake name]')} — ${esc(p.customerName||'[owner]')}".
+    Include signed page. Send reply-to: <strong>${esc(p.replyEmail||'permits@happyshoresco.com')}</strong>.
+    Processing typically takes 2–4 weeks.
+  </div>
+
+  <h2>Signatures</h2>
+  <div class="sig-block">
+    <div class="sig-line">Property Owner Signature</div>
+    <div class="sig-line">Date</div>
+  </div>
+  <div class="sig-block" style="margin-top:20px">
+    <div class="sig-line">Happy Shores Co Representative</div>
+    <div class="sig-line">Date</div>
+  </div>
+
+  <div class="footer">Happy Shores Co · Madison &amp; Dane County · (608) 345-2345 · happyshoresco.com</div>
+  <script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+};
 
 // ══════════════════════════════════════
 // JOBS
