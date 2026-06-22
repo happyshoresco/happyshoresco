@@ -2,7 +2,8 @@ const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
 const sgMail    = require('@sendgrid/mail');
 const PDFDoc    = require('pdfkit');
-const https     = require('https');
+const path      = require('path');
+const fs        = require('fs');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -15,23 +16,12 @@ const COMPANY_WEBSITE  = 'happyshoresco.com';
 
 sgMail.setApiKey(SENDGRID_API_KEY);
 
-// ── Fetch logo as a buffer from the live site ─────────────────────────────────
-function fetchLogoBuffer() {
-  return new Promise((resolve, reject) => {
-    https.get('https://happyshoresco.com/logo.png', res => {
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end',  () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
-  });
-}
+const LOGO_PATH       = path.join(__dirname, 'logo.png');
+const LOGO_BASE64     = fs.readFileSync(LOGO_PATH).toString('base64');
+const LOGO_DATA_URI   = `data:image/png;base64,${LOGO_BASE64}`;
 
 // ── Generate PDF buffer from invoice data ──────────────────────────────────────
-async function generateInvoicePDF(inv) {
-  let logoBuffer = null;
-  try { logoBuffer = await fetchLogoBuffer(); } catch (_) {}
-
+function generateInvoicePDF(inv) {
   return new Promise((resolve, reject) => {
     const doc    = new PDFDoc({ margin: 50, size: 'LETTER' });
     const chunks = [];
@@ -49,9 +39,7 @@ async function generateInvoicePDF(inv) {
     doc.rect(0, 0, 612, 110).fill(teal);
 
     // Logo — right side of header as a circular badge
-    if (logoBuffer) {
-      doc.image(logoBuffer, 492, 5, { width: 100, height: 100 });
-    }
+    doc.image(LOGO_PATH, 492, 5, { width: 100, height: 100 });
 
     doc.fontSize(22).font('Helvetica-Bold').fillColor('#ffffff')
       .text('Happy Shores Co', 50, 30);
@@ -176,7 +164,7 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   const htmlBody = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
     <div style="background:#f5f0e8;padding:20px;text-align:center;">
-      <img src="https://happyshoresco.com/logo.png" width="110" alt="Happy Shores Co" style="display:inline-block;" />
+      <img src="${LOGO_DATA_URI}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
     </div>
     <div style="background:#0d7370;padding:20px 32px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
