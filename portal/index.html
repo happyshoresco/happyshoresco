@@ -598,6 +598,9 @@
     <button class="nav-link" data-panel="quotes">
       <span class="icon">💲</span> Quotes
     </button>
+    <button class="nav-link" data-panel="customquotes">
+      <span class="icon">📝</span> Custom Quotes
+    </button>
     <button class="nav-link" data-panel="permits">
       <span class="icon">📋</span> Dane Co. Permits
     </button>
@@ -613,6 +616,9 @@
     <div class="nav-section">Tools</div>
     <button class="nav-link" data-panel="notes">
       <span class="icon">📝</span> Team Notes
+    </button>
+    <button class="nav-link" data-panel="newsletter">
+      <span class="icon">📬</span> Newsletter
     </button>
   </nav>
 
@@ -967,12 +973,213 @@
       </div>
     </div>
 
+    <!-- ════ CUSTOM QUOTES ════ -->
+    <div class="panel" id="panel-customquotes">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h3 style="font-size:1.1rem;font-weight:700;">Custom Quotes</h3>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+          <input class="search-input" id="cqSearch" placeholder="Search by customer…" style="min-width:180px;" />
+          <select class="search-input" id="cqStatusFilter" style="min-width:130px;">
+            <option value="all">All Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+            <option value="converted">Converted</option>
+          </select>
+          <button class="btn btn-primary" id="addCqBtn">+ New Custom Quote</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Description</th>
+            <th>Discount</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Expiry</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="cqTbody">
+            <tr><td colspan="8"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ════ NEWSLETTER ════ -->
+    <div class="panel" id="panel-newsletter">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+        <h3 style="font-size:1.1rem;font-weight:700;">Newsletter &amp; Mailing Lists</h3>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="addSubBtn">+ Add Subscriber</button>
+          <button class="btn btn-ghost" id="importCustSubBtn">Import from Customers</button>
+        </div>
+      </div>
+
+      <!-- Subscriber list -->
+      <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+        <input class="search-input" id="subSearch" placeholder="Search subscribers…" style="min-width:200px;" />
+        <select class="search-input" id="subListFilter" style="min-width:150px;">
+          <option value="all">All Lists</option>
+          <option value="potential">Potential Customers</option>
+          <option value="current">Current Customers</option>
+          <option value="past">Past Customers</option>
+        </select>
+        <span id="subCount" style="font-size:.8125rem;color:var(--text-muted);margin-left:auto;"></span>
+      </div>
+      <div class="table-wrapper" style="margin-bottom:2rem;">
+        <table class="data-table">
+          <thead><tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>List</th>
+            <th>Added</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="subTbody">
+            <tr><td colspan="5"><div class="empty-state"><div class="es-icon">⏳</div><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Compose & Send -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;">
+        <h4 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">Compose &amp; Send Newsletter</h4>
+        <div class="form-grid form-grid-2" style="margin-bottom:1rem;">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Subject *</label>
+            <input type="text" id="nlSubject" placeholder="Summer lake maintenance tips…" />
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Message *</label>
+            <textarea id="nlMessage" rows="8" placeholder="Write your newsletter message here…" style="min-height:200px;"></textarea>
+          </div>
+        </div>
+        <div style="margin-bottom:1rem;">
+          <label style="font-size:.8125rem;font-weight:700;color:var(--ink);display:block;margin-bottom:.5rem;">Send To</label>
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer;">
+              <input type="checkbox" id="nlListPotential" /> Potential Customers
+            </label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer;">
+              <input type="checkbox" id="nlListCurrent" checked /> Current Customers
+            </label>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer;">
+              <input type="checkbox" id="nlListPast" /> Past Customers
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="sendNewsletterBtn">Send Newsletter</button>
+          <span id="nlStatus" style="font-size:.875rem;color:var(--text-muted);"></span>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
 <!-- ══════════════════════════════════════
      MODALS
 ═══════════════════════════════════════ -->
+
+<!-- Custom Quote Modal -->
+<div class="modal-backdrop" id="customQuoteModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h2 id="cqModalTitle">New Custom Quote</h2>
+      <button class="modal-close" data-close="customQuoteModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cqId" />
+      <div class="form-grid form-grid-2" style="margin-bottom:1rem;">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Customer *</label>
+          <select id="cqCustomer">
+            <option value="">— Select customer —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="cqStatus">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valid Until</label>
+          <input type="date" id="cqExpiry" />
+        </div>
+      </div>
+
+      <label style="font-size:.8125rem;font-weight:700;color:var(--ink);display:block;margin-bottom:.5rem;">Line Items</label>
+      <div class="invoice-items" id="cqItemsContainer"></div>
+      <button class="btn btn-ghost btn-sm" id="cqAddLineItem" style="margin-top:.6rem;">+ Add Line Item</button>
+
+      <div class="invoice-total-row" id="cqTotalRow">
+        <span>Total</span>
+        <span id="cqTotalDisplay">$0.00</span>
+      </div>
+
+      <div class="form-grid form-grid-2" style="margin-top:1rem;">
+        <div class="form-group">
+          <label>Discount (%)</label>
+          <input type="number" id="cqDiscount" placeholder="0" min="0" max="100" step="1" />
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div id="cqDiscountDisplay" style="padding:.5rem 0;font-size:.875rem;color:#991b1b;"></div>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notes</label>
+          <textarea id="cqNotes" placeholder="Special conditions, scope notes…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="customQuoteModal">Cancel</button>
+      <button class="btn btn-primary" id="saveCqBtn">Save Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subscriber Modal -->
+<div class="modal-backdrop" id="subscriberModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 id="subModalTitle">Add Subscriber</h2>
+      <button class="modal-close" data-close="subscriberModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="subId" />
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" id="subName" placeholder="Jane Smith" />
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="subEmail" placeholder="jane@example.com" />
+      </div>
+      <div class="form-group">
+        <label>List</label>
+        <select id="subListType">
+          <option value="potential">Potential Customer</option>
+          <option value="current">Current Customer</option>
+          <option value="past">Past Customer</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="subscriberModal">Cancel</button>
+      <button class="btn btn-primary" id="saveSubBtn">Save Subscriber</button>
+    </div>
+  </div>
+</div>
 
 <!-- Customer Modal -->
 <div class="modal-backdrop" id="customerModal">
@@ -1490,8 +1697,9 @@ function statusBadge(s) {
 
 const panelTitles = {
   home: 'Dashboard', customers: 'Customers', invoices: 'Invoicing',
-  quotes: 'Quotes', permits: 'Dane Co. Permits', jobs: 'Job Schedule',
-  employees: 'Employees', notes: 'Team Notes',
+  quotes: 'Quotes', customquotes: 'Custom Quotes', permits: 'Dane Co. Permits',
+  jobs: 'Job Schedule', employees: 'Employees', notes: 'Team Notes',
+  newsletter: 'Newsletter',
 };
 
 document.querySelectorAll('.nav-link[data-panel]').forEach(btn => {
@@ -1532,7 +1740,7 @@ document.getElementById('signOutBtn').addEventListener('click', () => signOut(au
 // ── Load all data ─────────────────────────────────────────────────────────────
 
 async function loadAll() {
-  await Promise.all([loadCustomers(), loadInvoices(), loadQuotes(), loadPermits(), loadJobs(), loadNotes(), loadEmployees()]);
+  await Promise.all([loadCustomers(), loadInvoices(), loadQuotes(), loadCustomQuotes(), loadPermits(), loadJobs(), loadNotes(), loadEmployees(), loadSubscribers()]);
   refreshDashboardStats();
 }
 
@@ -1610,7 +1818,7 @@ function renderCustomers(list) {
 }
 
 function populateCustomerDropdowns() {
-  ['invCustomer','jobCustomer','quoteCustomer'].forEach(id => {
+  ['invCustomer','jobCustomer','quoteCustomer','cqCustomer'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const cur = sel.value;
@@ -2813,6 +3021,461 @@ document.getElementById('saveNoteBtn').addEventListener('click', async () => {
   }
   closeModal('noteModal');
   loadNotes();
+});
+
+// ══════════════════════════════════════
+// CUSTOM QUOTES
+// ══════════════════════════════════════
+
+let allCustomQuotes = [];
+
+async function loadCustomQuotes() {
+  const snap = await getDocs(query(collection(db, 'customQuotes'), orderBy('createdAt', 'desc')));
+  allCustomQuotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCustomQuotes();
+}
+
+function cqSubtotal(items) {
+  return (items || []).reduce((s, it) => s + ((+it.qty || 0) * (+it.price || 0)), 0);
+}
+function cqTotal(cq) {
+  const sub = cqSubtotal(cq.items);
+  return cq.discount > 0 ? sub * (1 - cq.discount / 100) : sub;
+}
+
+function renderCustomQuotes() {
+  const q      = (document.getElementById('cqSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('cqStatusFilter')?.value || 'all';
+  let list = allCustomQuotes.filter(cq => {
+    const matchStatus = status === 'all' || cq.status === status;
+    const matchQ      = !q || (cq.customerName || '').toLowerCase().includes(q);
+    return matchStatus && matchQ;
+  });
+
+  const tbody = document.getElementById('cqTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📝</div><p>No custom quotes yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((cq, idx) => {
+    const descPreview = (cq.items || [])[0]?.desc || '—';
+    const total       = cqTotal(cq);
+    const discStr     = cq.discount > 0 ? `${cq.discount}%` : '—';
+    return `<tr>
+      <td style="font-weight:700;color:var(--teal)">#${String(list.length - idx).padStart(3,'0')}</td>
+      <td>${esc(cq.customerName || '—')}</td>
+      <td style="font-size:.8rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(descPreview)}</td>
+      <td style="color:#991b1b">${discStr}</td>
+      <td style="font-weight:700">$${total.toFixed(2)}</td>
+      <td>${statusBadge(cq.status)}</td>
+      <td style="font-size:.8rem;color:var(--text-muted)">${fmtDate(cq.expiry || '')}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editCq('${cq.id}')">Edit</button>
+          <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="downloadCqPDF('${cq.id}')">⬇ PDF</button>
+          ${cq.status !== 'converted' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="convertCqToInvoice('${cq.id}')">→ Invoice</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteCq('${cq.id}')">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('cqSearch').addEventListener('input', renderCustomQuotes);
+document.getElementById('cqStatusFilter').addEventListener('change', renderCustomQuotes);
+document.getElementById('addCqBtn').addEventListener('click', () => {
+  clearCqForm();
+  document.getElementById('cqModalTitle').textContent = 'New Custom Quote';
+  openModal('customQuoteModal');
+});
+
+function clearCqForm() {
+  document.getElementById('cqId').value       = '';
+  document.getElementById('cqCustomer').value = '';
+  document.getElementById('cqStatus').value   = 'draft';
+  document.getElementById('cqExpiry').value   = '';
+  document.getElementById('cqDiscount').value = '';
+  document.getElementById('cqNotes').value    = '';
+  document.getElementById('cqDiscountDisplay').textContent = '';
+  document.getElementById('cqItemsContainer').innerHTML = '';
+  document.getElementById('cqTotalDisplay').textContent = '$0.00';
+  addCqLineItem();
+}
+
+function addCqLineItem(desc = '', qty = 1, price = '') {
+  const container = document.getElementById('cqItemsContainer');
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML = `
+    <input type="text"   class="ii-desc"  placeholder="Service description…" value="${esc(desc)}" />
+    <input type="number" class="ii-qty"   placeholder="Qty"  value="${qty}" min="1" style="width:60px;" />
+    <input type="number" class="ii-price" placeholder="Price" value="${price}" min="0" step="0.01" />
+    <button class="btn-remove-item" title="Remove">✕</button>`;
+  row.querySelector('.btn-remove-item').addEventListener('click', () => { row.remove(); updateCqTotal(); });
+  row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateCqTotal));
+  container.appendChild(row);
+  updateCqTotal();
+}
+
+function updateCqTotal() {
+  const rows    = document.querySelectorAll('#cqItemsContainer .item-row');
+  const discount = parseFloat(document.getElementById('cqDiscount').value) || 0;
+  let subtotal = 0;
+  rows.forEach(row => {
+    const qty   = parseFloat(row.querySelector('.ii-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.ii-price').value) || 0;
+    subtotal += qty * price;
+  });
+  const discAmt = discount > 0 ? subtotal * (discount / 100) : 0;
+  const total   = subtotal - discAmt;
+  document.getElementById('cqTotalDisplay').textContent = '$' + total.toFixed(2);
+  document.getElementById('cqDiscountDisplay').textContent = discount > 0
+    ? `Discount: -$${discAmt.toFixed(2)}`
+    : '';
+}
+
+document.getElementById('cqAddLineItem').addEventListener('click', () => addCqLineItem());
+document.getElementById('cqDiscount').addEventListener('input', updateCqTotal);
+
+window.editCq = function(id) {
+  const cq = allCustomQuotes.find(x => x.id === id);
+  if (!cq) return;
+  document.getElementById('cqId').value       = cq.id;
+  document.getElementById('cqCustomer').value = cq.customerId || '';
+  document.getElementById('cqStatus').value   = cq.status    || 'draft';
+  document.getElementById('cqExpiry').value   = cq.expiry    || '';
+  document.getElementById('cqDiscount').value = cq.discount  || '';
+  document.getElementById('cqNotes').value    = cq.notes     || '';
+  document.getElementById('cqItemsContainer').innerHTML = '';
+  (cq.items || []).forEach(it => addCqLineItem(it.desc, it.qty, it.price));
+  updateCqTotal();
+  document.getElementById('cqModalTitle').textContent = 'Edit Custom Quote';
+  openModal('customQuoteModal');
+};
+
+window.deleteCq = async function(id) {
+  if (!confirm('Delete this quote?')) return;
+  await deleteDoc(doc(db, 'customQuotes', id));
+  toast('Quote deleted.', 'error');
+  loadCustomQuotes();
+};
+
+document.getElementById('saveCqBtn').addEventListener('click', async () => {
+  const custSel  = document.getElementById('cqCustomer');
+  const custId   = custSel.value;
+  const custName = custSel.options[custSel.selectedIndex]?.dataset.name || '';
+  if (!custId) { toast('Select a customer.', 'error'); return; }
+
+  const rows = [...document.querySelectorAll('#cqItemsContainer .item-row')];
+  const items = rows.map(row => ({
+    desc:  row.querySelector('.ii-desc').value.trim(),
+    qty:   parseFloat(row.querySelector('.ii-qty').value) || 1,
+    price: parseFloat(row.querySelector('.ii-price').value) || 0,
+  })).filter(it => it.desc);
+  if (!items.length) { toast('Add at least one line item.', 'error'); return; }
+
+  const discount = parseFloat(document.getElementById('cqDiscount').value) || 0;
+  const subtotal = cqSubtotal(items);
+  const total    = discount > 0 ? subtotal * (1 - discount / 100) : subtotal;
+
+  const data = {
+    customerId:   custId,
+    customerName: custName,
+    items,
+    discount,
+    totalPrice:   total,
+    status:       document.getElementById('cqStatus').value,
+    expiry:       document.getElementById('cqExpiry').value,
+    notes:        document.getElementById('cqNotes').value.trim(),
+    updatedAt:    serverTimestamp(),
+  };
+
+  const id = document.getElementById('cqId').value;
+  if (id) {
+    await updateDoc(doc(db, 'customQuotes', id), data);
+    toast('Quote updated.', 'success');
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db, 'customQuotes'), data);
+    toast('Quote saved.', 'success');
+  }
+  closeModal('customQuoteModal');
+  loadCustomQuotes();
+});
+
+window.downloadCqPDF = function(id) {
+  const cq = allCustomQuotes.find(x => x.id === id);
+  if (!cq) return;
+
+  const idx      = allCustomQuotes.indexOf(cq);
+  const quoteNum = String(allCustomQuotes.length - idx).padStart(3, '0');
+  const subtotal = cqSubtotal(cq.items);
+  const discAmt  = cq.discount > 0 ? subtotal * (cq.discount / 100) : 0;
+  const total    = subtotal - discAmt;
+
+  const rowsHTML = (cq.items || []).map((it, i) => {
+    const lineTotal = (+it.qty || 0) * (+it.price || 0);
+    return `<tr style="background:${i % 2 === 0 ? '#fff' : '#f5fafa'}">
+      <td style="padding:10px 14px;color:#0c2e2e;">${esc(it.desc)}</td>
+      <td style="padding:10px 14px;text-align:center;color:#0c2e2e;">${it.qty}</td>
+      <td style="padding:10px 14px;text-align:right;color:#0c2e2e;">$${(+it.price).toFixed(2)}</td>
+      <td style="padding:10px 14px;text-align:right;color:#0c2e2e;font-weight:600;">$${lineTotal.toFixed(2)}</td>
+    </tr>`;
+  }).join('') + (discAmt > 0 ? `
+    <tr style="background:#fff5f5">
+      <td colspan="3" style="padding:10px 14px;color:#991b1b;">Discount (${cq.discount}%)</td>
+      <td style="padding:10px 14px;text-align:right;color:#991b1b;font-weight:600;">-$${discAmt.toFixed(2)}</td>
+    </tr>` : '');
+
+  const html = `<!DOCTYPE html>
+<html><head>
+  <meta charset="utf-8">
+  <title>Custom Quote #${quoteNum} — Happy Shores Co</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#0c2e2e}
+    .logo-bar{background:#f5f0e8;text-align:center;padding:18px}.logo-bar img{width:100px}
+    .header{background:#0d7370;padding:20px 40px;display:flex;justify-content:space-between;align-items:center}
+    .header h1{color:#fff;font-size:22px;margin-bottom:4px}.header p{color:rgba(255,255,255,.8);font-size:12px}
+    .header .label{color:#e8a500;font-size:28px;font-weight:800;letter-spacing:2px}
+    .meta{display:flex;justify-content:space-between;padding:28px 40px 0}
+    .meta-block h3{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#4a7070;margin-bottom:6px}
+    .meta-block p{font-size:13px;color:#0c2e2e;line-height:1.6}
+    .section{padding:28px 40px 0}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead tr{background:#eef4f3}thead th{padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#4a7070}
+    thead th:last-child,thead th:nth-child(3){text-align:right}thead th:nth-child(2){text-align:center}
+    .total-row td{padding:14px;background:#0d7370;color:#fff;font-weight:800;font-size:15px}
+    .total-row td:last-child{text-align:right}
+    .notes{padding:0 40px;margin:20px 40px 0;font-size:13px;color:#4a7070;border-left:3px solid #0d7370;padding-left:14px}
+    .footer{margin-top:48px;background:#081e1e;padding:14px 40px;text-align:center;font-size:11px;color:rgba(255,255,255,.4)}
+    @media print{@page{margin:0}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head><body>
+  <div class="logo-bar"><img src="https://happyshoresco.com/logo.png" alt="Happy Shores Co"/></div>
+  <div class="header">
+    <div><h1>Happy Shores Co</h1><p>(608) 345-2345 · happyshoresco.com</p></div>
+    <div class="label">QUOTE</div>
+  </div>
+  <div class="meta">
+    <div class="meta-block">
+      <h3>Quote #</h3><p>#${quoteNum}</p><br>
+      <h3>Date</h3><p>${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
+      ${cq.expiry ? `<br><h3>Valid Until</h3><p>${new Date(cq.expiry+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>` : ''}
+    </div>
+    <div class="meta-block" style="text-align:right">
+      <h3>Prepared For</h3>
+      <p style="font-size:15px;font-weight:700">${esc(cq.customerName||'—')}</p>
+    </div>
+  </div>
+  <div class="section">
+    <table>
+      <thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${rowsHTML}</tbody>
+      <tfoot><tr class="total-row"><td colspan="3">Total Quote</td><td>$${total.toFixed(2)}</td></tr></tfoot>
+    </table>
+  </div>
+  ${cq.notes ? `<div class="notes">${esc(cq.notes)}</div>` : ''}
+  <div class="footer">Happy Shores Co · Madison & Dane County · (608) 345-2345 · happyshoresco.com</div>
+  <script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+};
+
+window.convertCqToInvoice = async function(id) {
+  const cq = allCustomQuotes.find(x => x.id === id);
+  if (!cq) return;
+  if (!confirm(`Convert this quote to an invoice for ${cq.customerName}?`)) return;
+
+  let items = [...(cq.items || [])];
+  if (cq.discount > 0) {
+    const subtotal = cqSubtotal(items);
+    items.push({ desc: `Discount (${cq.discount}%)`, qty: 1, price: -(subtotal * cq.discount / 100) });
+  }
+
+  const counterRef = doc(db, 'meta', 'invoiceCounter');
+  let nextNum = 100;
+  await runTransaction(db, async tx => {
+    const snap = await tx.get(counterRef);
+    nextNum = snap.exists() ? (snap.data().value + 1) : 100;
+    tx.set(counterRef, { value: nextNum });
+  });
+
+  await addDoc(collection(db, 'invoices'), {
+    customerId:    cq.customerId,
+    customerName:  cq.customerName,
+    date:          new Date().toISOString().slice(0,10),
+    dueDate:       cq.expiry || '',
+    status:        'draft',
+    notes:         cq.notes || '',
+    items,
+    invoiceNumber: nextNum,
+    createdAt:     serverTimestamp(),
+    updatedAt:     serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, 'customQuotes', id), { status: 'converted', updatedAt: serverTimestamp() });
+  toast('Invoice created from custom quote!', 'success');
+  loadCustomQuotes();
+  loadInvoices();
+  refreshDashboardStats();
+};
+
+// ══════════════════════════════════════
+// NEWSLETTER & MAILING LISTS
+// ══════════════════════════════════════
+
+let allSubscribers = [];
+
+async function loadSubscribers() {
+  const snap = await getDocs(query(collection(db, 'subscribers'), orderBy('addedAt', 'desc')));
+  allSubscribers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderSubscribers();
+}
+
+const listLabels = { potential: 'Potential', current: 'Current', past: 'Past' };
+const listColors = { potential: '#dbeafe:#1e40af', current: '#d1fae5:#065f46', past: '#f3f4f6:#374151' };
+
+function subListBadge(type) {
+  const [bg, color] = (listColors[type] || '#f3f4f6:#374151').split(':');
+  return `<span style="background:${bg};color:${color};padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:600;">${listLabels[type] || type}</span>`;
+}
+
+function renderSubscribers() {
+  const q    = (document.getElementById('subSearch')?.value || '').toLowerCase();
+  const list = document.getElementById('subListFilter')?.value || 'all';
+  let subs = allSubscribers.filter(s => {
+    const matchList = list === 'all' || s.listType === list;
+    const matchQ    = !q || (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q);
+    return matchList && matchQ;
+  });
+
+  document.getElementById('subCount').textContent = `${subs.length} subscriber${subs.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('subTbody');
+  if (!subs.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="es-icon">📬</div><p>No subscribers yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = subs.map(s => `<tr>
+    <td>${esc(s.name || '—')}</td>
+    <td style="font-size:.875rem;">${esc(s.email || '—')}</td>
+    <td>${subListBadge(s.listType)}</td>
+    <td style="font-size:.8rem;color:var(--text-muted)">${s.addedAt?.seconds ? new Date(s.addedAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+    <td>
+      <div class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editSub('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}')">Remove</button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+document.getElementById('subSearch').addEventListener('input', renderSubscribers);
+document.getElementById('subListFilter').addEventListener('change', renderSubscribers);
+
+document.getElementById('addSubBtn').addEventListener('click', () => {
+  ['subId','subName','subEmail'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('subListType').value = 'potential';
+  document.getElementById('subModalTitle').textContent = 'Add Subscriber';
+  openModal('subscriberModal');
+});
+
+window.editSub = function(id) {
+  const s = allSubscribers.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('subId').value       = s.id;
+  document.getElementById('subName').value     = s.name || '';
+  document.getElementById('subEmail').value    = s.email || '';
+  document.getElementById('subListType').value = s.listType || 'potential';
+  document.getElementById('subModalTitle').textContent = 'Edit Subscriber';
+  openModal('subscriberModal');
+};
+
+window.deleteSub = async function(id) {
+  if (!confirm('Remove this subscriber?')) return;
+  await deleteDoc(doc(db, 'subscribers', id));
+  toast('Subscriber removed.', 'error');
+  loadSubscribers();
+};
+
+document.getElementById('saveSubBtn').addEventListener('click', async () => {
+  const name  = document.getElementById('subName').value.trim();
+  const email = document.getElementById('subEmail').value.trim();
+  if (!name)  { toast('Name is required.', 'error'); return; }
+  if (!email) { toast('Email is required.', 'error'); return; }
+
+  const data = {
+    name,
+    email,
+    listType: document.getElementById('subListType').value,
+  };
+
+  const id = document.getElementById('subId').value;
+  if (id) {
+    await updateDoc(doc(db, 'subscribers', id), { ...data, updatedAt: serverTimestamp() });
+    toast('Subscriber updated.', 'success');
+  } else {
+    const existing = allSubscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+    if (existing) { toast('That email is already subscribed.', 'error'); return; }
+    await addDoc(collection(db, 'subscribers'), { ...data, addedAt: serverTimestamp() });
+    toast('Subscriber added.', 'success');
+  }
+  closeModal('subscriberModal');
+  loadSubscribers();
+});
+
+document.getElementById('importCustSubBtn').addEventListener('click', async () => {
+  if (!confirm(`Import all customers with emails into the mailing list as "Current Customers"? Existing emails will be skipped.`)) return;
+  const existingEmails = new Set(allSubscribers.map(s => s.email.toLowerCase()));
+  let added = 0;
+  for (const c of allCustomers) {
+    if (!c.email) continue;
+    if (existingEmails.has(c.email.toLowerCase())) continue;
+    await addDoc(collection(db, 'subscribers'), {
+      name: c.name, email: c.email, listType: 'current', addedAt: serverTimestamp()
+    });
+    added++;
+  }
+  toast(`Imported ${added} customer${added !== 1 ? 's' : ''}.`, 'success');
+  loadSubscribers();
+});
+
+document.getElementById('sendNewsletterBtn').addEventListener('click', async () => {
+  const subject = document.getElementById('nlSubject').value.trim();
+  const message = document.getElementById('nlMessage').value.trim();
+  if (!subject) { toast('Subject is required.', 'error'); return; }
+  if (!message) { toast('Message is required.', 'error'); return; }
+
+  const listTypes = [];
+  if (document.getElementById('nlListPotential').checked) listTypes.push('potential');
+  if (document.getElementById('nlListCurrent').checked)   listTypes.push('current');
+  if (document.getElementById('nlListPast').checked)      listTypes.push('past');
+  if (!listTypes.length) { toast('Select at least one list.', 'error'); return; }
+
+  const recipientCount = allSubscribers.filter(s => listTypes.includes(s.listType)).length;
+  if (!recipientCount) { toast('No subscribers in the selected lists.', 'error'); return; }
+  if (!confirm(`Send newsletter to ${recipientCount} subscriber${recipientCount !== 1 ? 's' : ''}?`)) return;
+
+  const statusEl = document.getElementById('nlStatus');
+  statusEl.textContent = 'Sending…';
+  document.getElementById('sendNewsletterBtn').disabled = true;
+
+  try {
+    const fn     = httpsCallable(functions, 'sendNewsletter');
+    const result = await fn({ subject, message, listTypes });
+    statusEl.textContent = `Sent to ${result.data.sent} subscriber${result.data.sent !== 1 ? 's' : ''}.`;
+    toast(`Newsletter sent to ${result.data.sent} recipients!`, 'success');
+  } catch (e) {
+    statusEl.textContent = 'Send failed — check console.';
+    toast('Failed to send newsletter: ' + e.message, 'error');
+  } finally {
+    document.getElementById('sendNewsletterBtn').disabled = false;
+  }
 });
 
 // ══════════════════════════════════════

@@ -217,6 +217,62 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   return { success: true, sentTo: customerEmail };
 });
 
+// ── Callable function: sendNewsletter ─────────────────────────────────────────
+exports.sendNewsletter = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
+
+  const { subject, message, listTypes } = data;
+  if (!subject || !message || !listTypes?.length)
+    throw new functions.https.HttpsError('invalid-argument', 'subject, message, and listTypes are required.');
+
+  const snap = await db.collection('subscribers').get();
+  const subscribers = snap.docs
+    .map(d => d.data())
+    .filter(s => s.email && listTypes.includes(s.listType));
+
+  if (!subscribers.length) return { success: true, sent: 0 };
+
+  const safeMessage = message
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .split('\n').join('<br>');
+
+  let sent = 0;
+  for (const sub of subscribers) {
+    const htmlBody = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+      <div style="background:#f5f0e8;padding:20px;text-align:center;">
+        <img src="${LOGO_EMAIL_URL}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
+      </div>
+      <div style="background:#0d7370;padding:20px 32px;">
+        <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
+        <p style="color:rgba(255,255,255,0.85);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · <a href="https://${COMPANY_WEBSITE}" style="color:#e8c97c;text-decoration:none;">${COMPANY_WEBSITE}</a></p>
+      </div>
+      <div style="padding:32px;background:#fff;line-height:1.8;font-size:15px;">
+        <p style="margin:0 0 16px;">Hi ${sub.name || 'there'},</p>
+        <div style="margin:0 0 24px;">${safeMessage}</div>
+        <p style="margin:0;color:#4a7070;font-size:13px;">Questions? Call ${COMPANY_PHONE} or reply to this email.</p>
+        <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
+      </div>
+      <div style="background:#081e1e;padding:14px 32px;text-align:center;">
+        <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
+        <p style="color:rgba(255,255,255,0.2);font-size:10px;margin:4px 0 0;">You're receiving this because you're on our mailing list.</p>
+      </div>
+    </div>`;
+
+    await sgMail.send({
+      to:      sub.email,
+      from:    { email: FROM_EMAIL, name: FROM_NAME },
+      subject,
+      html:    htmlBody,
+    });
+    sent++;
+  }
+
+  return { success: true, sent };
+});
+
 // ── Callable function: sendAssignmentEmail ────────────────────────────────────
 exports.sendAssignmentEmail = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
