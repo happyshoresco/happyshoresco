@@ -3,7 +3,6 @@ const admin     = require('firebase-admin');
 const sgMail    = require('@sendgrid/mail');
 const PDFDoc    = require('pdfkit');
 const path      = require('path');
-const fs        = require('fs');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -17,8 +16,7 @@ const COMPANY_WEBSITE  = 'happyshoresco.com';
 sgMail.setApiKey(SENDGRID_API_KEY);
 
 const LOGO_PATH       = path.join(__dirname, 'logo.png');
-const LOGO_BASE64     = fs.readFileSync(LOGO_PATH).toString('base64');
-const LOGO_DATA_URI   = `data:image/png;base64,${LOGO_BASE64}`;
+const LOGO_EMAIL_URL  = 'https://happyshoresco.com/logo.png';
 
 // ── Generate PDF buffer from invoice data ──────────────────────────────────────
 function generateInvoicePDF(inv) {
@@ -164,7 +162,7 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   const htmlBody = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
     <div style="background:#f5f0e8;padding:20px;text-align:center;">
-      <img src="${LOGO_DATA_URI}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
+      <img src="${LOGO_EMAIL_URL}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
     </div>
     <div style="background:#0d7370;padding:20px 32px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
