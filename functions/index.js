@@ -9,7 +9,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL       = 'thehappyshoresco@gmail.com';
+const FROM_EMAIL       = 'hello@happyshoresco.com';
 const FROM_NAME        = 'Happy Shores Co';
 const COMPANY_PHONE    = '(608) 345-2345';
 const COMPANY_WEBSITE  = 'happyshoresco.com';
