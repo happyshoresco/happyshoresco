@@ -1322,10 +1322,15 @@
             <div class="qb-row qb-addon" id="qbRowPermit" style="display:none"><span>Permitting fee</span><span>+$35.00</span></div>
             <div class="qb-row qb-addon" id="qbRowDifficult" style="display:none"><span>Difficult access</span><span>+$25.00</span></div>
             <div class="qb-row qb-addon" id="qbRowDisposal" style="display:none"><span>Weed disposal</span><span>+$40.00</span></div>
+            <div class="qb-row qb-addon" id="qbRowDiscount" style="display:none;color:#991b1b"><span id="qbDiscountLabel">Discount (0%)</span><span id="qbDiscountAmt">-$0.00</span></div>
             <div class="qb-total"><span>Total Quote</span><span id="qbTotal">$0.00</span></div>
           </div>
         </div>
 
+        <div class="form-group">
+          <label>Discount (%)</label>
+          <input type="number" id="quoteDiscount" placeholder="0" min="0" max="100" step="1" />
+        </div>
         <div class="form-group">
           <label>Status</label>
           <select id="quoteStatus">
@@ -1919,10 +1924,11 @@ function renderQuotes() {
   tbody.innerHTML = list.map((qt, idx) => {
     const area = (qt.length || 0) * (qt.width || 0);
     const addons = [
-      qt.overgrown    ? 'Overgrown'  : null,
-      qt.permitFee    ? 'Permit'     : null,
-      qt.difficultAccess ? 'Access'  : null,
-      qt.disposal     ? 'Disposal'   : null,
+      qt.overgrown       ? 'Overgrown'              : null,
+      qt.permitFee       ? 'Permit'                 : null,
+      qt.difficultAccess ? 'Access'                 : null,
+      qt.disposal        ? 'Disposal'               : null,
+      qt.discount > 0    ? `${qt.discount}% off`    : null,
     ].filter(Boolean).join(', ');
     return `<tr>
       <td style="font-weight:700;color:var(--teal)">#${String(allQuotes.length - idx).padStart(3,'0')}</td>
@@ -1954,9 +1960,10 @@ function calcQuoteBase(qt) {
 
 function calcQuoteTotal(qt) {
   let total = calcQuoteBase(qt);
-  if (qt.permitFee)      total += 35;
+  if (qt.permitFee)       total += 35;
   if (qt.difficultAccess) total += 25;
-  if (qt.disposal)       total += 40;
+  if (qt.disposal)        total += 40;
+  if (qt.discount > 0)    total *= (1 - qt.discount / 100);
   return total;
 }
 
@@ -1986,6 +1993,7 @@ function clearQuoteForm() {
   ['quoteOvergrown','quotePermit','quoteDifficult','quoteDisposal'].forEach(id => {
     document.getElementById(id).checked = false;
   });
+  document.getElementById('quoteDiscount').value = '';
   updateQuoteBreakdown();
 }
 
@@ -2003,6 +2011,7 @@ window.editQuote = function(id) {
   document.getElementById('quotePermit').checked          = !!qt.permitFee;
   document.getElementById('quoteDifficult').checked       = !!qt.difficultAccess;
   document.getElementById('quoteDisposal').checked        = !!qt.disposal;
+  document.getElementById('quoteDiscount').value           = qt.discount || '';
   updateQuoteBreakdown();
   document.getElementById('quoteModalTitle').textContent = 'Edit Quote';
   openModal('quoteModal');
@@ -2022,7 +2031,9 @@ window.downloadQuotePDF = function(id) {
   const area      = (qt.length || 0) * (qt.width || 0);
   const baseRaw   = area * 0.08;
   const basePrice = qt.overgrown ? baseRaw * 2 : baseRaw;
-  const total     = calcQuoteTotal(qt);
+  const subtotal  = basePrice + (qt.permitFee ? 35 : 0) + (qt.difficultAccess ? 25 : 0) + (qt.disposal ? 40 : 0);
+  const discountAmt = (qt.discount > 0) ? subtotal * (qt.discount / 100) : 0;
+  const total     = subtotal - discountAmt;
   const quoteNum  = String(allQuotes.indexOf(qt) + 1).padStart(3, '0');
 
   const rows = [
@@ -2030,12 +2041,13 @@ window.downloadQuotePDF = function(id) {
     ...(qt.permitFee        ? [{ desc: 'Dane County permitting fee',          amount: 35 }] : []),
     ...(qt.difficultAccess  ? [{ desc: 'Difficult access surcharge',           amount: 25 }] : []),
     ...(qt.disposal         ? [{ desc: 'Weed haul & disposal (compost site)',  amount: 40 }] : []),
+    ...(discountAmt > 0     ? [{ desc: `Discount (${qt.discount}%)`,           amount: -discountAmt }] : []),
   ];
 
   const rowsHTML = rows.map((r, i) => `
     <tr style="background:${i % 2 === 0 ? '#fff' : '#f5fafa'}">
-      <td style="padding:10px 14px;color:#0c2e2e;">${r.desc}</td>
-      <td style="padding:10px 14px;text-align:right;color:#0c2e2e;font-weight:600;">$${r.amount.toFixed(2)}</td>
+      <td style="padding:10px 14px;color:${r.amount < 0 ? '#991b1b' : '#0c2e2e'};">${r.desc}</td>
+      <td style="padding:10px 14px;text-align:right;color:${r.amount < 0 ? '#991b1b' : '#0c2e2e'};font-weight:600;">${r.amount < 0 ? '-$' + Math.abs(r.amount).toFixed(2) : '$' + r.amount.toFixed(2)}</td>
     </tr>`).join('');
 
   const html = `<!DOCTYPE html>
@@ -2134,6 +2146,11 @@ window.convertQuoteToInvoice = async function(id) {
   if (qt.permitFee)       items.push({ desc: 'Dane County permitting fee',             qty: 1, price: 35 });
   if (qt.difficultAccess) items.push({ desc: 'Difficult access surcharge',              qty: 1, price: 25 });
   if (qt.disposal)        items.push({ desc: 'Weed haul & disposal at compost site',    qty: 1, price: 40 });
+  if (qt.discount > 0) {
+    const subtotal = items.reduce((s, it) => s + it.price, 0);
+    const discAmt  = subtotal * (qt.discount / 100);
+    items.push({ desc: `Discount (${qt.discount}%)`, qty: 1, price: -discAmt });
+  }
 
   const counterRef = doc(db, 'meta', 'invoiceCounter');
   let nextNum = 100;
@@ -2171,11 +2188,13 @@ document.getElementById('saveQuoteBtn').addEventListener('click', async () => {
   if (!custId)        { toast('Select a customer.', 'error'); return; }
   if (!length||!width){ toast('Length and width are required.', 'error'); return; }
 
+  const discount = parseFloat(document.getElementById('quoteDiscount').value) || 0;
   const qt = {
     overgrown:      document.getElementById('quoteOvergrown').checked,
     permitFee:      document.getElementById('quotePermit').checked,
     difficultAccess:document.getElementById('quoteDifficult').checked,
     disposal:       document.getElementById('quoteDisposal').checked,
+    discount,
   };
 
   const data = {
@@ -2207,27 +2226,35 @@ document.getElementById('saveQuoteBtn').addEventListener('click', async () => {
 // ── Live price calculator ─────────────────────────────────────────────────────
 
 function updateQuoteBreakdown() {
-  const length = parseFloat(document.getElementById('quoteLength').value) || 0;
-  const width  = parseFloat(document.getElementById('quoteWidth').value)  || 0;
-  const area   = length * width;
+  const length   = parseFloat(document.getElementById('quoteLength').value) || 0;
+  const width    = parseFloat(document.getElementById('quoteWidth').value)  || 0;
+  const area     = length * width;
   let base = area * 0.08;
   const overgrown = document.getElementById('quoteOvergrown').checked;
   const permit    = document.getElementById('quotePermit').checked;
   const difficult = document.getElementById('quoteDifficult').checked;
   const disposal  = document.getElementById('quoteDisposal').checked;
+  const discount  = parseFloat(document.getElementById('quoteDiscount').value) || 0;
   if (overgrown) base *= 2;
-  const total = base + (permit ? 35 : 0) + (difficult ? 25 : 0) + (disposal ? 40 : 0);
+  const subtotal  = base + (permit ? 35 : 0) + (difficult ? 25 : 0) + (disposal ? 40 : 0);
+  const discountAmt = discount > 0 ? subtotal * (discount / 100) : 0;
+  const total     = subtotal - discountAmt;
 
   document.getElementById('qbArea').textContent  = area ? area.toLocaleString() + ' sq ft' : '— sq ft';
   document.getElementById('qbBase').textContent  = '$' + (area * 0.08 * (overgrown ? 2 : 1)).toFixed(2);
   document.getElementById('qbTotal').textContent = '$' + total.toFixed(2);
-  document.getElementById('qbRowOvergrown').style.display = overgrown ? '' : 'none';
-  document.getElementById('qbRowPermit').style.display    = permit    ? '' : 'none';
-  document.getElementById('qbRowDifficult').style.display = difficult ? '' : 'none';
-  document.getElementById('qbRowDisposal').style.display  = disposal  ? '' : 'none';
+  document.getElementById('qbRowOvergrown').style.display = overgrown    ? '' : 'none';
+  document.getElementById('qbRowPermit').style.display    = permit       ? '' : 'none';
+  document.getElementById('qbRowDifficult').style.display = difficult    ? '' : 'none';
+  document.getElementById('qbRowDisposal').style.display  = disposal     ? '' : 'none';
+  document.getElementById('qbRowDiscount').style.display  = discount > 0 ? '' : 'none';
+  if (discount > 0) {
+    document.getElementById('qbDiscountLabel').textContent = `Discount (${discount}%)`;
+    document.getElementById('qbDiscountAmt').textContent   = `-$${discountAmt.toFixed(2)}`;
+  }
 }
 
-['quoteLength','quoteWidth'].forEach(id =>
+['quoteLength','quoteWidth','quoteDiscount'].forEach(id =>
   document.getElementById(id).addEventListener('input', updateQuoteBreakdown));
 ['quoteOvergrown','quotePermit','quoteDifficult','quoteDisposal'].forEach(id =>
   document.getElementById(id).addEventListener('change', updateQuoteBreakdown));
