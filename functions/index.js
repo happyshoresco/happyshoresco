@@ -107,19 +107,18 @@ function generateInvoicePDF(inv) {
       doc.fontSize(9).font('Helvetica').fillColor(ink).text(inv.notes, 50, y + 14, { width: 512 });
     }
 
-    // ── PAID stamp (for receipts) ──
-    if (inv.paid) {
-      doc.save();
-      doc.rotate(-35, { origin: [306, 420] });
-      doc.fontSize(72).font('Helvetica-Bold').fillColor('rgba(5,150,105,0.12)')
-        .text('PAID', 130, 370, { width: 350, align: 'center' });
-      doc.restore();
-    }
-
     // ── Footer ──
     doc.fontSize(8).font('Helvetica').fillColor(muted)
       .text('Thank you for choosing Happy Shores Co — Madison & Dane County Lake Specialists',
             50, 720, { align: 'center', width: 512 });
+
+    // ── PAID stamp at bottom ──
+    if (inv.paid) {
+      const stampY = 736;
+      doc.rect(170, stampY, 272, 36).lineWidth(2.5).stroke('#059669');
+      doc.fontSize(20).font('Helvetica-Bold').fillColor('#059669')
+        .text('PAID IN FULL', 170, stampY + 9, { width: 272, align: 'center' });
+    }
 
     doc.end();
   });
@@ -184,7 +183,6 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
 
   if (isPaid) {
     // ── Paid receipt email ────────────────────────────────────────────────────
-    const GOOGLE_REVIEW_URL = 'YOUR_GOOGLE_REVIEW_LINK_HERE';
     subject  = `Payment received — Thank you, ${inv.customerName || 'valued customer'}! Receipt #${invNum}`;
     htmlBody = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
@@ -195,12 +193,6 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
         <p style="margin:0 0 16px;">We've received your payment of <strong>$${total.toFixed(2)}</strong> for invoice #${invNum} — thank you so much! Your paid receipt is attached for your records.</p>
 
         <p style="margin:0 0 16px;">It was a genuine pleasure working on your lakefront. Our goal is always to deliver a five-star experience, and your satisfaction is everything to us. If for any reason the work didn't fully meet your expectations, please reach out right away — we will come back out and make it perfect, no questions asked.</p>
-
-        <p style="margin:0 0 16px;">If you did have a great experience, we'd be incredibly grateful if you took a moment to leave us a Google review. As a small local business, reviews make a huge difference and help other lake owners find the help they need.</p>
-
-        <div style="text-align:center;margin:24px 0;">
-          <a href="${GOOGLE_REVIEW_URL}" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">⭐ Leave Us a Google Review</a>
-        </div>
 
         <p style="margin:0 0 16px;">Also, if you'd like to keep your shoreline looking its best all season without the hassle, ask us about our <strong>subscription maintenance plans</strong> — we'll handle everything on a regular schedule so you can spend more time enjoying the water.</p>
 
@@ -416,7 +408,9 @@ Looking forward to working with you!
 
 Best,
 The Happy Shores Co Team
-${COMPANY_PHONE} | ${COMPANY_WEBSITE} | ${FROM_EMAIL}`;
+${COMPANY_PHONE} | ${COMPANY_WEBSITE} | ${FROM_EMAIL}
+
+To make sure our emails reach your inbox, add ${FROM_EMAIL} to your contacts.`;
 
   const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#222;max-width:560px;">
 <p>Hi ${qt.customerName || 'there'},</p>
@@ -425,6 +419,7 @@ ${COMPANY_PHONE} | ${COMPANY_WEBSITE} | ${FROM_EMAIL}`;
 <p>If the price isn't quite where you'd like it to be, don't hesitate to reach out. We're always happy to talk through the numbers and find something that works for you. Every lake is a little different and we're flexible on scope.</p>
 <p>Looking forward to working with you!</p>
 <p>Best,<br><strong>The Happy Shores Co Team</strong><br>${COMPANY_PHONE} | <a href="https://${COMPANY_WEBSITE}" style="color:#0d7370;">${COMPANY_WEBSITE}</a></p>
+<p style="font-size:12px;color:#888;margin-top:24px;">To make sure our emails reach your inbox, add <strong>${FROM_EMAIL}</strong> to your contacts.</p>
 </div>`;
 
   await sgMail.send({
