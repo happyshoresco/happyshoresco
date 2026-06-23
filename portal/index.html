@@ -400,7 +400,7 @@
       padding: .65rem .85rem; border-radius: 8px; border: 1.5px solid var(--gray-200);
       background: var(--white); transition: all .15s; user-select: none;
     }
-    .quote-check:has(input:checked) { border-color: var(--teal); background: var(--teal-bg); }
+    .quote-check:has(input:checked) { border-color: var(--teal); background: #e6f4f4; }
     .quote-check input { accent-color: var(--teal); width: 16px; height: 16px; flex-shrink: 0; }
     .quote-check > div { flex: 1; }
     .qc-label { display: block; font-weight: 600; font-size: .875rem; color: var(--ink); }
@@ -2945,16 +2945,22 @@ document.getElementById('saveJobBtn').addEventListener('click', async () => {
     toast('Job scheduled.', 'success');
   }
 
-  // Find newly assigned employees (not previously assigned)
+  // Notify newly assigned employees by email
   const prevJob = allJobs.find(j => j.id === id);
   const prevIds = (prevJob?.assignedEmployees || []).map(e => e.id);
   const newlyAssigned = selectedEmps.filter(e => !prevIds.includes(e.id));
   if (newlyAssigned.length > 0) {
     try {
       const notify = httpsCallable(functions, 'sendAssignmentEmail');
-      await notify({ jobId, employeeIds: newlyAssigned.map(e => e.id) });
+      const result = await notify({ jobId, employeeIds: newlyAssigned.map(e => e.id) });
+      const names  = newlyAssigned.map(e => e.name).join(', ');
+      if ((result.data.notified || []).length > 0) {
+        toast(`Assignment email sent to ${names}.`, 'success');
+      } else {
+        toast(`Job saved — no emails sent (employees may be missing email addresses).`, 'error');
+      }
     } catch(e) {
-      console.warn('Assignment email failed:', e.message);
+      toast(`Job saved, but assignment email failed: ${e.message}`, 'error');
     }
   }
 
@@ -3081,9 +3087,9 @@ function renderEmpPicker(selected = []) {
   }
   picker.innerHTML = activeEmps.map(e => {
     const checked = selIds.includes(e.id);
-    return `<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;padding:.3rem .6rem;border-radius:6px;border:1.5px solid ${checked?'var(--teal)':'var(--gray-200)'};background:${checked?'var(--teal-bg)':'var(--white)'};font-size:.875rem;transition:all .15s">
+    return `<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;padding:.3rem .6rem;border-radius:6px;border:1.5px solid ${checked?'var(--teal)':'var(--gray-200)'};background:${checked?'#e6f4f4':'var(--white)'};font-size:.875rem;transition:all .15s">
       <input type="checkbox" data-emp-id="${e.id}" data-emp-name="${esc(e.name)}" data-emp-email="${esc(e.email)}" ${checked?'checked':''} style="accent-color:var(--teal);" />
-      <span style="font-weight:${checked?'600':'400'}">${esc(e.name)}</span>
+      <span style="font-weight:${checked?'600':'400'};color:var(--ink)">${esc(e.name)}</span>
       <span style="color:var(--text-muted);font-size:.75rem">${esc(e.role||'')}</span>
     </label>`;
   }).join('');
@@ -3091,9 +3097,9 @@ function renderEmpPicker(selected = []) {
   picker.querySelectorAll('input[type=checkbox]').forEach(cb => {
     cb.addEventListener('change', () => {
       const lbl = cb.closest('label');
-      const on = cb.checked;
+      const on  = cb.checked;
       lbl.style.borderColor = on ? 'var(--teal)' : 'var(--gray-200)';
-      lbl.style.background  = on ? 'var(--teal-bg)' : 'var(--white)';
+      lbl.style.background  = on ? '#e6f4f4' : 'var(--white)';
       lbl.querySelector('span').style.fontWeight = on ? '600' : '400';
     });
   });
