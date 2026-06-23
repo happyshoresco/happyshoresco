@@ -12,7 +12,7 @@ const db = admin.firestore();
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL       = 'hello@happyshoresco.com';
 const FROM_NAME        = 'Happy Shores Co';
-const COMPANY_PHONE    = '(608) 345-2345';
+const COMPANY_PHONE    = '(608) 598-7999';
 const COMPANY_WEBSITE  = 'happyshoresco.com';
 
 sgMail.setApiKey(SENDGRID_API_KEY);
@@ -233,11 +233,16 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
     </div>`;
   }
 
+  const textBody = isPaid
+    ? `Hi ${inv.customerName || 'there'},\n\nWe've received your payment of $${total.toFixed(2)} for invoice #${invNum} — thank you so much! Your paid receipt is attached for your records.\n\nIt was a genuine pleasure working on your lakefront. If for any reason the work didn't fully meet your expectations, please reach out and we will make it right.\n\nIf you'd like to keep your shoreline looking great all season, ask us about our subscription maintenance plans.\n\nThanks again for choosing Happy Shores Co!\n\n— The Happy Shores Co Team\n${COMPANY_PHONE} · ${COMPANY_WEBSITE}`
+    : `Hi ${inv.customerName || 'there'},\n\nThank you for trusting Happy Shores Co with your lakefront. Please find your invoice #${invNum} attached${inv.dueDate ? `, due on ${fmtDate(inv.dueDate)}` : ''}. The total amount due is $${total.toFixed(2)}.\n\nIf you have any questions or would like to discuss payment options, please don't hesitate to reach out.\n\nIf for any reason the work didn't fully meet your expectations, let us know and we will come back out and make it right — no questions asked.\n\nQuestions? Call us at ${COMPANY_PHONE} or reply to this email.\n\n— The Happy Shores Co Team\n${COMPANY_PHONE} · ${COMPANY_WEBSITE}`;
+
   await sgMail.send({
     to:   customerEmail,
     from: { email: FROM_EMAIL, name: FROM_NAME },
     subject,
     html: htmlBody,
+    text: textBody,
     attachments: [{
       content:     pdfBuffer.toString('base64'),
       filename:    `HappyShores_${isPaid ? 'Receipt' : 'Invoice'}_${invNum}.pdf`,
@@ -325,7 +330,7 @@ function generateQuotePDF({ customerName, customerEmail, quoteNum, validUntil, r
 
     // Footer
     doc.fontSize(8).font('Helvetica').fillColor(muted)
-      .text('To accept this quote, call (608) 345-2345 or reply to this email — we\'ll get you on the schedule!',
+      .text('To accept this quote, call (608) 598-7999 or reply to this email — we\'ll get you on the schedule!',
             50, 700, { align: 'center', width: 512 })
       .text('Happy Shores Co · Madison & Dane County Lake Specialists',
             50, 714, { align: 'center', width: 512 });
@@ -394,6 +399,8 @@ exports.sendQuote = functions.https.onCall(async (data, context) => {
     notes:         qt.notes || '',
   });
 
+  const validLine = qt.expiry ? `, valid through ${fmtDate(qt.expiry)}` : '';
+
   const htmlBody = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
     <div style="background:#f5f0e8;padding:20px;text-align:center;">
@@ -408,13 +415,9 @@ exports.sendQuote = functions.https.onCall(async (data, context) => {
 
       <p style="margin:0 0 16px;">Thank you for your interest in Happy Shores Co! Please find your quote attached — we'd love to help get your shoreline looking its best.</p>
 
-      <p style="margin:0 0 16px;">Your quote total is <strong>$${total.toFixed(2)}</strong>${qt.expiry ? `, valid through <strong>${fmtDate(qt.expiry)}</strong>` : ''}. To accept, just give us a call or reply to this email and we'll get you on the schedule.</p>
+      <p style="margin:0 0 16px;">Your quote total is <strong>$${total.toFixed(2)}</strong>${validLine}. If that works for you, just call or text us at <a href="tel:+16085987999" style="color:#0d7370;font-weight:600;">${COMPANY_PHONE}</a> or reply to this email and we'll get you on the schedule right away.</p>
 
-      <div style="text-align:center;margin:24px 0;">
-        <a href="tel:+16083452345" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">📞 Call to Schedule</a>
-      </div>
-
-      <p style="margin:0 0 16px;">If you have any questions or would like to adjust the scope of work, don't hesitate to reach out — we're happy to work with you to find the right solution for your lake.</p>
+      <p style="margin:0 0 16px;">If the price isn't quite where you'd like it to be, please don't hesitate to reach out — we're always happy to talk through the numbers and find something that works for you. Every lake is a little different and we're flexible on scope.</p>
 
       <p style="margin:0 0 8px;">We look forward to working with you!</p>
       <p style="margin:0;">Warm regards,</p>
@@ -425,11 +428,26 @@ exports.sendQuote = functions.https.onCall(async (data, context) => {
     </div>
   </div>`;
 
+  const textBody =
+`Hi ${qt.customerName || 'there'},
+
+Thank you for your interest in Happy Shores Co! Please find your quote attached.
+
+Your quote total is $${total.toFixed(2)}${validLine}. If that works for you, call or text us at ${COMPANY_PHONE} or reply to this email and we'll get you on the schedule.
+
+If the price isn't quite where you'd like it to be, please reach out — we're always happy to talk through the numbers and find something that works for you.
+
+We look forward to working with you!
+
+— The Happy Shores Co Team
+${COMPANY_PHONE} · ${COMPANY_WEBSITE}`;
+
   await sgMail.send({
     to:      customerEmail,
     from:    { email: FROM_EMAIL, name: FROM_NAME },
-    subject: `Your Quote from Happy Shores Co — $${total.toFixed(2)}${qt.expiry ? ` (valid until ${fmtDate(qt.expiry)})` : ''}`,
+    subject: `Your quote from Happy Shores Co — $${total.toFixed(2)}${validLine}`,
     html:    htmlBody,
+    text:    textBody,
     attachments: [{
       content:     pdfBuffer.toString('base64'),
       filename:    `HappyShores_Quote_${quoteNum}.pdf`,
