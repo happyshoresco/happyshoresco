@@ -401,53 +401,38 @@ exports.sendQuote = functions.https.onCall(async (data, context) => {
 
   const validLine = qt.expiry ? `, valid through ${fmtDate(qt.expiry)}` : '';
 
-  const htmlBody = `
-  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
-    <div style="background:#f5f0e8;padding:20px;text-align:center;">
-      <img src="${LOGO_EMAIL_URL}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
-    </div>
-    <div style="background:#0d7370;padding:20px 32px;">
-      <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
-      <p style="color:rgba(255,255,255,0.85);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · <a href="https://${COMPANY_WEBSITE}" style="color:#e8c97c;text-decoration:none;">${COMPANY_WEBSITE}</a></p>
-    </div>
-    <div style="padding:32px;background:#fff;line-height:1.7;">
-      <p style="margin:0 0 16px;">Hi ${qt.customerName || 'there'},</p>
-
-      <p style="margin:0 0 16px;">Thank you for your interest in Happy Shores Co! Please find your quote attached — we'd love to help get your shoreline looking its best.</p>
-
-      <p style="margin:0 0 16px;">Your quote total is <strong>$${total.toFixed(2)}</strong>${validLine}. If that works for you, just call or text us at <a href="tel:+16085987999" style="color:#0d7370;font-weight:600;">${COMPANY_PHONE}</a> or reply to this email and we'll get you on the schedule right away.</p>
-
-      <p style="margin:0 0 16px;">If the price isn't quite where you'd like it to be, please don't hesitate to reach out — we're always happy to talk through the numbers and find something that works for you. Every lake is a little different and we're flexible on scope.</p>
-
-      <p style="margin:0 0 8px;">We look forward to working with you!</p>
-      <p style="margin:0;">Warm regards,</p>
-      <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
-    </div>
-    <div style="background:#081e1e;padding:14px 32px;text-align:center;">
-      <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
-    </div>
-  </div>`;
-
-  const textBody =
+  // Plain personal-style email — no template, no images, no colored blocks.
+  // Styled marketing templates are the primary cause of Promotions tab classification.
+  const emailBody =
 `Hi ${qt.customerName || 'there'},
 
-Thank you for your interest in Happy Shores Co! Please find your quote attached.
+Thank you for your interest in Happy Shores Co! Please find your quote attached${validLine ? ` (${validLine.trim()})` : ''}.
 
-Your quote total is $${total.toFixed(2)}${validLine}. If that works for you, call or text us at ${COMPANY_PHONE} or reply to this email and we'll get you on the schedule.
+If the quote looks good, feel free to call, text, or reply to this email and we'll get you on the schedule right away — ${COMPANY_PHONE}.
 
-If the price isn't quite where you'd like it to be, please reach out — we're always happy to talk through the numbers and find something that works for you.
+If the price isn't quite where you'd like it to be, don't hesitate to reach out. We're always happy to talk through the numbers and find something that works for you. Every lake is a little different and we're flexible on scope.
 
-We look forward to working with you!
+Looking forward to working with you!
 
-— The Happy Shores Co Team
-${COMPANY_PHONE} · ${COMPANY_WEBSITE}`;
+Best,
+The Happy Shores Co Team
+${COMPANY_PHONE} | ${COMPANY_WEBSITE} | ${FROM_EMAIL}`;
+
+  const htmlBody = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#222;max-width:560px;">
+<p>Hi ${qt.customerName || 'there'},</p>
+<p>Thank you for your interest in Happy Shores Co! Please find your quote attached${validLine ? ` (${validLine.trim()})` : ''}.</p>
+<p>If the quote looks good, feel free to call, text, or reply to this email and we'll get you on the schedule right away — <a href="tel:+16085987999" style="color:#0d7370;">${COMPANY_PHONE}</a>.</p>
+<p>If the price isn't quite where you'd like it to be, don't hesitate to reach out. We're always happy to talk through the numbers and find something that works for you. Every lake is a little different and we're flexible on scope.</p>
+<p>Looking forward to working with you!</p>
+<p>Best,<br><strong>The Happy Shores Co Team</strong><br>${COMPANY_PHONE} | <a href="https://${COMPANY_WEBSITE}" style="color:#0d7370;">${COMPANY_WEBSITE}</a></p>
+</div>`;
 
   await sgMail.send({
     to:      customerEmail,
     from:    { email: FROM_EMAIL, name: FROM_NAME },
-    subject: `Your quote from Happy Shores Co — $${total.toFixed(2)}${validLine}`,
+    subject: `Quote from Happy Shores Co`,
     html:    htmlBody,
-    text:    textBody,
+    text:    emailBody,
     attachments: [{
       content:     pdfBuffer.toString('base64'),
       filename:    `HappyShores_Quote_${quoteNum}.pdf`,
