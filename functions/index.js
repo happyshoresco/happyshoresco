@@ -107,6 +107,15 @@ function generateInvoicePDF(inv) {
       doc.fontSize(9).font('Helvetica').fillColor(ink).text(inv.notes, 50, y + 14, { width: 512 });
     }
 
+    // ── PAID stamp (for receipts) ──
+    if (inv.paid) {
+      doc.save();
+      doc.rotate(-35, { origin: [306, 420] });
+      doc.fontSize(72).font('Helvetica-Bold').fillColor('rgba(5,150,105,0.12)')
+        .text('PAID', 130, 370, { width: 350, align: 'center' });
+      doc.restore();
+    }
+
     // ── Footer ──
     doc.fontSize(8).font('Helvetica').fillColor(muted)
       .text('Thank you for choosing Happy Shores Co — Madison & Dane County Lake Specialists',
@@ -130,12 +139,10 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   const { invoiceId } = data;
   if (!invoiceId) throw new functions.https.HttpsError('invalid-argument', 'invoiceId required.');
 
-  // Fetch invoice
   const invSnap = await db.collection('invoices').doc(invoiceId).get();
   if (!invSnap.exists) throw new functions.https.HttpsError('not-found', 'Invoice not found.');
   const inv = { id: invSnap.id, ...invSnap.data() };
 
-  // Fetch customer for email/phone
   let customerEmail = inv.customerEmail || '';
   let customerPhone = inv.customerPhone || '';
   if (inv.customerId) {
@@ -146,75 +153,103 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
       customerPhone = customerPhone || cust.phone || '';
     }
   }
-
   if (!customerEmail) throw new functions.https.HttpsError('failed-precondition', 'Customer has no email address.');
 
-  // Attach customer info to invoice for PDF
   inv.customerEmail = customerEmail;
   inv.customerPhone = customerPhone;
 
-  // Generate PDF
+  const isPaid  = inv.status === 'paid';
+  const invNum  = String(inv.invoiceNumber || '').padStart(4, '0');
+  const total   = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
+
+  // Pass paid flag so PDF renders the PAID watermark for receipts
+  inv.paid = isPaid;
   const pdfBuffer = await generateInvoicePDF(inv);
-  const invNum    = String(inv.invoiceNumber || '').padStart(4, '0');
 
-  const total = (inv.items || []).reduce((s, it) => s + (+it.qty * +it.price), 0);
-
-  const GOOGLE_REVIEW_URL = 'YOUR_GOOGLE_REVIEW_LINK_HERE';
-
-  const htmlBody = `
-  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+  const emailHeader = `
     <div style="background:#f5f0e8;padding:20px;text-align:center;">
       <img src="${LOGO_EMAIL_URL}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
     </div>
     <div style="background:#0d7370;padding:20px 32px;">
       <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
       <p style="color:rgba(255,255,255,0.85);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · <a href="https://${COMPANY_WEBSITE}" style="color:#e8c97c;text-decoration:none;">${COMPANY_WEBSITE}</a></p>
-    </div>
-    <div style="padding:32px;background:#fff;line-height:1.7;">
-      <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
+    </div>`;
 
-      <p style="margin:0 0 16px;">Thank you so much for trusting Happy Shores Co with your lakefront — it truly means the world to us. Please find your invoice #${invNum} attached${inv.dueDate ? `, due on ${fmtDate(inv.dueDate)}` : ''}. The total amount due is <strong>$${total.toFixed(2)}</strong>.</p>
-
-      <p style="margin:0 0 16px;">Our goal is always to deliver a five-star experience, and your satisfaction is our top priority. If for any reason the work didn't meet your expectations, please reach out and we will come back out and make it right — no questions asked.</p>
-
-      <p style="margin:0 0 16px;">If you did have a great experience, we'd be incredibly grateful if you took a moment to leave us a Google review. As a small local business, reviews make a huge difference for us and help other lake owners find the help they need.</p>
-
-      <div style="text-align:center;margin:24px 0;">
-        <a href="${GOOGLE_REVIEW_URL}" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">⭐ Leave Us a Google Review</a>
-      </div>
-
-      <p style="margin:0 0 16px;">Also, if you'd like to keep your shoreline looking its best all season without the hassle, ask us about our <strong>subscription maintenance plans</strong> — we'll handle everything on a regular schedule so you can spend more time enjoying the water.</p>
-
-      <p style="margin:0 0 8px;">Questions? Call us anytime at ${COMPANY_PHONE} or simply reply to this email.</p>
-      <p style="margin:0;">Thanks again — we look forward to serving you!</p>
-      <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
-    </div>
+  const emailFooter = `
     <div style="background:#081e1e;padding:14px 32px;text-align:center;">
       <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
-    </div>
-  </div>`;
+    </div>`;
 
-  const msg = {
+  let htmlBody, subject;
+
+  if (isPaid) {
+    // ── Paid receipt email ────────────────────────────────────────────────────
+    const GOOGLE_REVIEW_URL = 'YOUR_GOOGLE_REVIEW_LINK_HERE';
+    subject  = `Payment received — Thank you, ${inv.customerName || 'valued customer'}! Receipt #${invNum}`;
+    htmlBody = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+      ${emailHeader}
+      <div style="padding:32px;background:#fff;line-height:1.7;">
+        <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
+
+        <p style="margin:0 0 16px;">We've received your payment of <strong>$${total.toFixed(2)}</strong> for invoice #${invNum} — thank you so much! Your paid receipt is attached for your records.</p>
+
+        <p style="margin:0 0 16px;">It was a genuine pleasure working on your lakefront. Our goal is always to deliver a five-star experience, and your satisfaction is everything to us. If for any reason the work didn't fully meet your expectations, please reach out right away — we will come back out and make it perfect, no questions asked.</p>
+
+        <p style="margin:0 0 16px;">If you did have a great experience, we'd be incredibly grateful if you took a moment to leave us a Google review. As a small local business, reviews make a huge difference and help other lake owners find the help they need.</p>
+
+        <div style="text-align:center;margin:24px 0;">
+          <a href="${GOOGLE_REVIEW_URL}" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">⭐ Leave Us a Google Review</a>
+        </div>
+
+        <p style="margin:0 0 16px;">Also, if you'd like to keep your shoreline looking its best all season without the hassle, ask us about our <strong>subscription maintenance plans</strong> — we'll handle everything on a regular schedule so you can spend more time enjoying the water.</p>
+
+        <p style="margin:0 0 8px;">Thanks again for choosing Happy Shores Co — we truly appreciate your business!</p>
+        <p style="margin:0;">Warmly,</p>
+        <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
+      </div>
+      ${emailFooter}
+    </div>`;
+  } else {
+    // ── Unpaid invoice email ──────────────────────────────────────────────────
+    subject  = `Invoice #${invNum} from Happy Shores Co — $${total.toFixed(2)}${inv.dueDate ? ` due ${fmtDate(inv.dueDate)}` : ''}`;
+    htmlBody = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+      ${emailHeader}
+      <div style="padding:32px;background:#fff;line-height:1.7;">
+        <p style="margin:0 0 16px;">Hi ${inv.customerName || 'there'},</p>
+
+        <p style="margin:0 0 16px;">Thank you so much for trusting Happy Shores Co with your lakefront — it truly means the world to us. Please find your invoice #${invNum} attached${inv.dueDate ? `, due on <strong>${fmtDate(inv.dueDate)}</strong>` : ''}. The total amount due is <strong>$${total.toFixed(2)}</strong>.</p>
+
+        <p style="margin:0 0 16px;">If you have any questions about this invoice or would like to discuss payment options, please don't hesitate to reach out — we're always happy to help.</p>
+
+        <p style="margin:0 0 16px;">Our goal is always to deliver a five-star experience. If for any reason the work didn't fully meet your expectations, please let us know and we will come back out and make it right — no questions asked.</p>
+
+        <p style="margin:0 0 8px;">Questions? Call us anytime at ${COMPANY_PHONE} or simply reply to this email.</p>
+        <p style="margin:0;">Thanks again — we look forward to hearing from you!</p>
+        <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
+      </div>
+      ${emailFooter}
+    </div>`;
+  }
+
+  await sgMail.send({
     to:   customerEmail,
     from: { email: FROM_EMAIL, name: FROM_NAME },
-    subject: `Invoice #${invNum} from Happy Shores Co — $${total.toFixed(2)} due ${fmtDate(inv.dueDate)}`,
+    subject,
     html: htmlBody,
     attachments: [{
       content:     pdfBuffer.toString('base64'),
-      filename:    `HappyShores_Invoice_${invNum}.pdf`,
+      filename:    `HappyShores_${isPaid ? 'Receipt' : 'Invoice'}_${invNum}.pdf`,
       type:        'application/pdf',
       disposition: 'attachment',
     }],
-  };
-
-  await sgMail.send(msg);
-
-  // Mark invoice as sent in Firestore
-  await db.collection('invoices').doc(invoiceId).update({
-    status:   'sent',
-    sentAt:   admin.firestore.FieldValue.serverTimestamp(),
-    sentTo:   customerEmail,
   });
+
+  // Paid invoices stay paid; unpaid invoices get marked sent
+  const update = { sentAt: admin.firestore.FieldValue.serverTimestamp(), sentTo: customerEmail };
+  if (!isPaid) update.status = 'sent';
+  await db.collection('invoices').doc(invoiceId).update(update);
 
   return { success: true, sentTo: customerEmail };
 });
