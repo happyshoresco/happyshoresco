@@ -99,10 +99,20 @@ function generateInvoicePDF(inv) {
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#ffffff')
       .text('TOTAL', 398, y + 8, { width: 80 })
       .text(`$${grandTotal.toFixed(2)}`, 398, y + 8, { width: 160, align: 'right' });
+    y += 28;
+
+    // ── PAID IN FULL badge — inline after total, never overflows ──
+    if (inv.paid) {
+      y += 12;
+      doc.rect(390, y, 172, 28).lineWidth(2).stroke('#059669');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#059669')
+        .text('PAID IN FULL', 390, y + 8, { width: 172, align: 'center' });
+      y += 28;
+    }
 
     // ── Notes ──
     if (inv.notes) {
-      y += 50;
+      y += 20;
       doc.fontSize(8).font('Helvetica-Bold').fillColor(muted).text('NOTE', 50, y);
       doc.fontSize(9).font('Helvetica').fillColor(ink).text(inv.notes, 50, y + 14, { width: 512 });
     }
@@ -111,14 +121,6 @@ function generateInvoicePDF(inv) {
     doc.fontSize(8).font('Helvetica').fillColor(muted)
       .text('Thank you for choosing Happy Shores Co — Madison & Dane County Lake Specialists',
             50, 720, { align: 'center', width: 512 });
-
-    // ── PAID stamp at bottom ──
-    if (inv.paid) {
-      const stampY = 736;
-      doc.rect(170, stampY, 272, 36).lineWidth(2.5).stroke('#059669');
-      doc.fontSize(20).font('Helvetica-Bold').fillColor('#059669')
-        .text('PAID IN FULL', 170, stampY + 9, { width: 272, align: 'center' });
-    }
 
     doc.end();
   });
