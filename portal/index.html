@@ -2089,6 +2089,23 @@ window.sendInvoiceEmail = async function(id) {
   }
 };
 
+window.sendQuoteEmail = async function(id, quoteType) {
+  if (!confirm('Send this quote by email to the customer?')) return;
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const fn     = httpsCallable(functions, 'sendQuote');
+    const result = await fn({ quoteId: id, quoteType });
+    toast(`Quote emailed to ${result.data.sentTo}`, 'success');
+    if (quoteType === 'quote') loadQuotes(); else loadCustomQuotes();
+  } catch (err) {
+    toast('Failed to send: ' + (err.message || 'Unknown error'), 'error');
+    btn.disabled = false;
+    btn.textContent = '📧 Send';
+  }
+};
+
 document.getElementById('saveInvoiceBtn').addEventListener('click', async () => {
   const custId = document.getElementById('invCustomer').value;
   const custEl = document.getElementById('invCustomer');
@@ -2181,6 +2198,7 @@ function renderQuotes() {
         <div class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="editQuote('${qt.id}')">Edit</button>
           <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="downloadQuotePDF('${qt.id}')">⬇ PDF</button>
+          <button class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;" onclick="sendQuoteEmail('${qt.id}','quote')">📧 Send</button>
           ${qt.status !== 'converted' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="convertQuoteToInvoice('${qt.id}')">→ Invoice</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="deleteQuote('${qt.id}')">Del</button>
         </div>
@@ -3242,6 +3260,7 @@ function renderCustomQuotes() {
         <div class="td-actions">
           <button class="btn btn-ghost btn-sm" onclick="editCq('${cq.id}')">Edit</button>
           <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="downloadCqPDF('${cq.id}')">⬇ PDF</button>
+          <button class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;" onclick="sendQuoteEmail('${cq.id}','customQuote')">📧 Send</button>
           ${cq.status !== 'converted' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;" onclick="convertCqToInvoice('${cq.id}')">→ Invoice</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="deleteCq('${cq.id}')">Del</button>
         </div>

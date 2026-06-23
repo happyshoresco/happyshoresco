@@ -219,6 +219,199 @@ exports.sendInvoice = functions.https.onCall(async (data, context) => {
   return { success: true, sentTo: customerEmail };
 });
 
+// ── Shared: generate a branded quote PDF ──────────────────────────────────────
+function generateQuotePDF({ customerName, customerEmail, quoteNum, validUntil, rows, total, notes }) {
+  return new Promise((resolve, reject) => {
+    const doc    = new PDFDoc({ margin: 50, size: 'LETTER' });
+    const chunks = [];
+    doc.on('data',  c => chunks.push(c));
+    doc.on('end',   () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const teal  = '#0d7370';
+    const ink   = '#0c2e2e';
+    const muted = '#4a7070';
+    const gold  = '#e8a500';
+
+    // Header bar
+    doc.rect(0, 0, 612, 110).fill(teal);
+    doc.image(LOGO_PATH, 492, 5, { width: 100, height: 100 });
+    doc.fontSize(22).font('Helvetica-Bold').fillColor('#ffffff').text('Happy Shores Co', 50, 30);
+    doc.fontSize(9).font('Helvetica').fillColor('rgba(255,255,255,0.75)')
+      .text(`${COMPANY_PHONE}  ·  ${COMPANY_WEBSITE}  ·  ${FROM_EMAIL}`, 50, 58);
+    doc.fontSize(20).font('Helvetica-Bold').fillColor(gold).text('QUOTE', 0, 78, { align: 'right', width: 480 });
+
+    // Meta
+    doc.fillColor(ink);
+    doc.fontSize(10).font('Helvetica-Bold').text(`Quote #${quoteNum}`, 50, 130);
+    doc.fontSize(9).font('Helvetica').fillColor(muted)
+      .text(`Date: ${fmtDate(new Date().toISOString().slice(0,10))}`, 50, 146);
+    if (validUntil) doc.text(`Valid Until: ${fmtDate(validUntil)}`, 50, 160);
+
+    // Bill To
+    doc.fillColor(ink).fontSize(9).font('Helvetica-Bold').text('PREPARED FOR', 300, 130);
+    doc.fontSize(10).font('Helvetica').fillColor(ink).text(customerName || '', 300, 146);
+    if (customerEmail) doc.text(customerEmail, 300, 160);
+
+    // Line items table
+    let y = 210;
+    doc.rect(50, y, 512, 22).fill('#eef4f3');
+    doc.fontSize(8).font('Helvetica-Bold').fillColor(muted)
+      .text('DESCRIPTION', 58, y + 7)
+      .text('AMOUNT', 498, y + 7, { width: 60, align: 'right' });
+    y += 22;
+
+    rows.forEach((row, i) => {
+      if (i % 2 === 1) doc.rect(50, y, 512, 22).fill('#f7fafa');
+      const isDiscount = row.amount < 0;
+      const color = isDiscount ? '#991b1b' : ink;
+      const amtStr = isDiscount
+        ? `-$${Math.abs(row.amount).toFixed(2)}`
+        : `$${row.amount.toFixed(2)}`;
+      doc.fontSize(9).font('Helvetica').fillColor(color)
+        .text(row.desc || '', 58, y + 6, { width: 420 })
+        .text(amtStr, 498, y + 6, { width: 60, align: 'right' });
+      y += 22;
+    });
+
+    // Total
+    y += 8;
+    doc.rect(390, y, 172, 28).fill(teal);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#ffffff')
+      .text('TOTAL', 398, y + 8, { width: 80 })
+      .text(`$${total.toFixed(2)}`, 398, y + 8, { width: 160, align: 'right' });
+
+    // Notes
+    if (notes) {
+      y += 50;
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(muted).text('NOTE', 50, y);
+      doc.fontSize(9).font('Helvetica').fillColor(ink).text(notes, 50, y + 14, { width: 512 });
+    }
+
+    // Footer
+    doc.fontSize(8).font('Helvetica').fillColor(muted)
+      .text('To accept this quote, call (608) 345-2345 or reply to this email — we\'ll get you on the schedule!',
+            50, 700, { align: 'center', width: 512 })
+      .text('Happy Shores Co · Madison & Dane County Lake Specialists',
+            50, 714, { align: 'center', width: 512 });
+
+    doc.end();
+  });
+}
+
+// ── Callable function: sendQuote ───────────────────────────────────────────────
+exports.sendQuote = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
+
+  const { quoteId, quoteType } = data;
+  if (!quoteId || !quoteType) throw new functions.https.HttpsError('invalid-argument', 'quoteId and quoteType required.');
+
+  const collection = quoteType === 'customQuote' ? 'customQuotes' : 'quotes';
+  const snap = await db.collection(collection).doc(quoteId).get();
+  if (!snap.exists) throw new functions.https.HttpsError('not-found', 'Quote not found.');
+  const qt = { id: snap.id, ...snap.data() };
+
+  // Get customer email
+  let customerEmail = '';
+  if (qt.customerId) {
+    const custSnap = await db.collection('customers').doc(qt.customerId).get();
+    if (custSnap.exists) customerEmail = custSnap.data().email || '';
+  }
+  if (!customerEmail) throw new functions.https.HttpsError('failed-precondition', 'Customer has no email address.');
+
+  // Build rows for PDF
+  let rows = [];
+  let total = 0;
+
+  if (quoteType === 'customQuote') {
+    rows = (qt.items || []).map(it => ({ desc: it.desc, amount: (+it.qty || 1) * (+it.price || 0) }));
+    const subtotal = rows.reduce((s, r) => s + r.amount, 0);
+    if (qt.discount > 0) {
+      const discAmt = subtotal * (qt.discount / 100);
+      rows.push({ desc: `Discount (${qt.discount}%)`, amount: -discAmt });
+    }
+    total = rows.reduce((s, r) => s + r.amount, 0);
+  } else {
+    const area     = (qt.length || 0) * (qt.width || 0);
+    const baseRaw  = area * 0.08;
+    const basePrice = qt.overgrown ? baseRaw * 2 : baseRaw;
+    rows.push({ desc: `Lake weed clearing — ${area.toLocaleString()} sq ft @ $0.08/sq ft${qt.overgrown ? ' (overgrown ×2)' : ''}`, amount: basePrice });
+    if (qt.permitFee)       rows.push({ desc: 'Dane County permitting fee',         amount: 35 });
+    if (qt.difficultAccess) rows.push({ desc: 'Difficult access surcharge',          amount: 25 });
+    if (qt.disposal)        rows.push({ desc: 'Weed haul & disposal (compost site)', amount: 40 });
+    const subtotal = rows.reduce((s, r) => s + r.amount, 0);
+    if (qt.discount > 0) {
+      const discAmt = subtotal * (qt.discount / 100);
+      rows.push({ desc: `Discount (${qt.discount}%)`, amount: -discAmt });
+    }
+    total = rows.reduce((s, r) => s + r.amount, 0);
+  }
+
+  const quoteNum = String(quoteId).slice(-4).toUpperCase();
+
+  const pdfBuffer = await generateQuotePDF({
+    customerName:  qt.customerName,
+    customerEmail,
+    quoteNum,
+    validUntil:    qt.expiry || null,
+    rows,
+    total,
+    notes:         qt.notes || '',
+  });
+
+  const htmlBody = `
+  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#0c2e2e;">
+    <div style="background:#f5f0e8;padding:20px;text-align:center;">
+      <img src="${LOGO_EMAIL_URL}" width="110" alt="Happy Shores Co" style="display:inline-block;" />
+    </div>
+    <div style="background:#0d7370;padding:20px 32px;">
+      <h1 style="color:#fff;margin:0;font-size:20px;">Happy Shores Co</h1>
+      <p style="color:rgba(255,255,255,0.85);margin:5px 0 0;font-size:12px;">${COMPANY_PHONE} · <a href="https://${COMPANY_WEBSITE}" style="color:#e8c97c;text-decoration:none;">${COMPANY_WEBSITE}</a></p>
+    </div>
+    <div style="padding:32px;background:#fff;line-height:1.7;">
+      <p style="margin:0 0 16px;">Hi ${qt.customerName || 'there'},</p>
+
+      <p style="margin:0 0 16px;">Thank you for your interest in Happy Shores Co! Please find your quote attached — we'd love to help get your shoreline looking its best.</p>
+
+      <p style="margin:0 0 16px;">Your quote total is <strong>$${total.toFixed(2)}</strong>${qt.expiry ? `, valid through <strong>${fmtDate(qt.expiry)}</strong>` : ''}. To accept, just give us a call or reply to this email and we'll get you on the schedule.</p>
+
+      <div style="text-align:center;margin:24px 0;">
+        <a href="tel:+16083452345" style="background:#0d7370;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;font-size:14px;display:inline-block;">📞 Call to Schedule</a>
+      </div>
+
+      <p style="margin:0 0 16px;">If you have any questions or would like to adjust the scope of work, don't hesitate to reach out — we're happy to work with you to find the right solution for your lake.</p>
+
+      <p style="margin:0 0 8px;">We look forward to working with you!</p>
+      <p style="margin:0;">Warm regards,</p>
+      <p style="margin:16px 0 0;font-style:italic;color:#4a7070;">— The Happy Shores Co Team</p>
+    </div>
+    <div style="background:#081e1e;padding:14px 32px;text-align:center;">
+      <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0;">Happy Shores Co · Madison & Dane County · ${COMPANY_PHONE}</p>
+    </div>
+  </div>`;
+
+  await sgMail.send({
+    to:      customerEmail,
+    from:    { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Your Quote from Happy Shores Co — $${total.toFixed(2)}${qt.expiry ? ` (valid until ${fmtDate(qt.expiry)})` : ''}`,
+    html:    htmlBody,
+    attachments: [{
+      content:     pdfBuffer.toString('base64'),
+      filename:    `HappyShores_Quote_${quoteNum}.pdf`,
+      type:        'application/pdf',
+      disposition: 'attachment',
+    }],
+  });
+
+  await db.collection(collection).doc(quoteId).update({
+    status:    'sent',
+    sentAt:    admin.firestore.FieldValue.serverTimestamp(),
+    sentTo:    customerEmail,
+  });
+
+  return { success: true, sentTo: customerEmail };
+});
+
 // ── Callable function: sendNewsletter ─────────────────────────────────────────
 exports.sendNewsletter = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Must be logged in.');
